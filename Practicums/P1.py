@@ -19,10 +19,10 @@ except ImportError:
 def run_practicum_final():
     # --- 1. DATA LADEN ---
     print("Bezig met laden van data...")
-    df_topo = pd.read_csv('grid_topology.csv')
-    df_cons = pd.read_csv('consumption_one_year_15min.csv', index_col='date')
-    df_pv   = pd.read_csv('pv_one_year_15min.csv', index_col='date')
-    df_ev   = pd.read_csv('ev_one_year_15min.csv', index_col='date')
+    df_topo = pd.read_csv('data/grid_topology.csv')
+    df_cons = pd.read_csv('data/consumption_one_year_15min.csv', index_col='date')
+    df_pv   = pd.read_csv('data/pv_one_year_15min.csv', index_col='date')
+    df_ev   = pd.read_csv('data/ev_one_year_15min.csv', index_col='date')
 
     # --- 2. CONFIGURATIE PV & EV (Opdracht D) ---
     # Hier kun je exact instellen wie wat heeft
@@ -45,8 +45,8 @@ def run_practicum_final():
             df_combined[col] = df_combined[col] + df_ev[col]
     
     # Sla de gecombineerde CSV op zoals gevraagd 
-    df_combined.to_csv('combined_profile_year.csv')
-    print("Gecombineerd profiel opgeslagen als 'combined_profile_year.csv'.")
+    df_combined.to_csv('data/combined_profile_year.csv')
+    print("Gecombineerd profiel opgeslagen als 'data/combined_profile_year.csv'.")
 
     # --- 3. POWER FLOW FUNCTIE ---
     def build_and_run(p_values_kw):
