@@ -1,0 +1,14 @@
+InitializationSettings:
+  config_id: 6
+  time:
+    start_time: 0
+    end_time: 500  # 500 minutes to observe full transient behavior
+    delta_t: 1  # Baseline: 1 minute timestep
+  initial_conditions:
+    heat_pump:
+      power_set_point: 600  # High initial power to force overshoot
+    room:
+      temperature: 15  # Start below minimum boundary (18°C)
+      outside_temperature: 10  # Moderate outside temperature
+      thermal_capacitance: 3000  # Medium thermal mass
+      thermal_resistance: 0.03  # Good insulation → low heat loss

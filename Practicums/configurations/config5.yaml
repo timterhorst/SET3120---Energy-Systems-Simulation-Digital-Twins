@@ -1,0 +1,15 @@
+InitializationSettings:
+  config_id: 5  # Test config
+  time:
+    start_time: 0
+    end_time: 300  # Korter (5 uur) om transiënt gedrag te zien
+    delta_t: 5  # ZEER KLEINE tijdstap → maakt verschillen zichtbaar
+  initial_conditions:
+    heat_pump:
+      power_set_point: 200  # Midden tussen extreem laag en hoog
+    room:
+      temperature: 10  # Koud
+      outside_temperature: 0  # Zeer koud (grote warmteverlies)
+      thermal_capacitance: 1000  # KLEIN (snelle dynamiek)
+      thermal_resistance: 0.005  # SLECHT geïsoleerd (grote warmteverlies)
+      

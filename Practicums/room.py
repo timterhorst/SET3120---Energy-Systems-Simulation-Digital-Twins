@@ -1,82 +1,25 @@
-"""
-Room thermal dynamics for SET3120 Practicum 2.
-ODE integration with explicit or implicit Euler.
-"""
+"""Room model."""
 
 
-class RoomModel:
-    """
-    Lumped thermal model of a room: capacitance C, resistance R to outside.
-    State: current room temperature T_room.
-    """
+class RoomFunction:
+    """A class to model the temperature of a room over time."""
+    def __init__(self, settings_configuration: dict):
+        """Initialize the Room with thermal properties and initial temperature."""
+        config = settings_configuration
 
-    def __init__(
-        self,
-        C: float,
-        R: float,
-        T_initial: float,
-        dt: float,
-        method: str = "explicit",
-    ) -> None:
+        # Store variables as class attributes to be tracked during the simulation
+        self.delta_t = config['InitializationSettings']['time']['delta_t']
+        self.room_temp = config['InitializationSettings']['initial_conditions']['room']['temperature']
+        self.outside_temp = config['InitializationSettings']['initial_conditions']['room']['outside_temperature']
+        self.room_tc = config['InitializationSettings']['initial_conditions']['room']['thermal_capacitance']
+        self.room_tr = config['InitializationSettings']['initial_conditions']['room']['thermal_resistance']
+
+    def __call__(self, heat_production_from_hp: float) -> float:
         """
-        Initialize room model with thermal parameters.
+        Callable method to update the room temperature during the simulation."""
+        # Calculate heat loss to the environment
+        heat_loss = (self.room_temp - self.outside_temp) / self.room_tr
 
-        Parameters
-        ----------
-        C : float
-            Thermal capacitance [J/K].
-        R : float
-            Thermal resistance [K/W].
-        T_initial : float
-            Initial room temperature [°C].
-        dt : float
-            Time step [s].
-        method : str, optional
-            Discretization: 'explicit' or 'implicit' Euler.
-        """
-        self.C = C
-        self.R = R
-        self.T_room = T_initial
-        self.dt = dt
-        self.method = method
-        self.tau = R * C  # Thermal time constant [s]
-
-    def update(self, Q_hp: float, T_outside: float) -> float:
-        """
-        Update room temperature for one timestep.
-
-        Parameters
-        ----------
-        Q_hp : float
-            Heat input from heat pump [W].
-        T_outside : float
-            Outside temperature [°C].
-
-        Returns
-        -------
-        float
-            New room temperature [°C] after the timestep.
-        """
-        tau = self.tau
-        dt = self.dt
-        C = self.C
-        T = self.T_room
-
-        if self.method == "explicit":
-            # Explicit Euler: T[k+1] = T[k] + dt * (Q_hp/C - (T[k]-T_out)/(R*C))
-            dT_dt = Q_hp / C - (T - T_outside) / (self.R * C)
-            T_new = T + dt * dT_dt
-        elif self.method == "implicit":
-            # Implicit Euler: T[k+1] = (T[k] + (dt/C)*Q_hp + (dt/tau)*T_out) / (1 + dt/tau)
-            numerator = T + (dt / C) * Q_hp + (dt / tau) * T_outside
-            denominator = 1 + dt / tau
-            T_new = numerator / denominator
-        else:
-            raise ValueError(f"Unknown method: {self.method}. Use 'explicit' or 'implicit'")
-
-        self.T_room = T_new
-        return T_new
-
-    def get_temperature(self) -> float:
-        """Return current room temperature [°C]."""
-        return self.T_room
+        # Update room temperature using the discrete-time equation
+        self.room_temp += self.delta_t * (heat_production_from_hp - heat_loss) / self.room_tc
+        return self.room_temp

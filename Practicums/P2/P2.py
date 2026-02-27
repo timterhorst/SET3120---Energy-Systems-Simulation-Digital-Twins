@@ -16,7 +16,7 @@ def simulate_smart_room(
     
     # Thermal parameters
     C=20e6,  # Thermal capacitance [J/K]
-    R=0.005,  # Thermal resistance [K/W]
+    R=0.02,  # Thermal resistance [K/W]
     
     # Heat pump parameters
     COP=3.0,  # Coefficient of Performance [-]
