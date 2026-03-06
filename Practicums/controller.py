@@ -2,43 +2,62 @@
 
 
 def controller_function(
-    power_set_point_hp: float, voltage: float, temperature: float, controller_settings: dict,
+    power_set_point_hp: float,
+    voltage: float,
+    temperature: float,
+    controller_settings: dict,
+    priority: str = "voltage",
 ) -> float:
     """A simple controller for co-simulated coupled electric grid, heat pump, and building systems.
-    
-    The controller is used to adjust the power setpoint of the heat pump based boundary conditions.
+
+    Parameters
+    ----------
+    priority : str
+        "voltage"     – voltage control overrides temperature (original behaviour)
+        "temperature" – temperature control overrides voltage
+        "equal"       – both objectives weighted equally (average of desired setpoints)
     """
-    # Boundary conditions
-    voltage_min = controller_settings['ControllerSettings']['boundary_conditions']['minimum_voltage']
-    voltage_max = controller_settings['ControllerSettings']['boundary_conditions']['maximum_voltage']
-    temp_min = controller_settings['ControllerSettings']['boundary_conditions']['minimum_temperature']
-    temp_max = controller_settings['ControllerSettings']['boundary_conditions']['maximum_temperature']
-    
-    p_adjust_step_size_voltage = controller_settings['ControllerSettings']['actions']['p_change_for_voltage']
-    p_adjust_step_size_temp = controller_settings['ControllerSettings']['actions']['p_change_for_temperature']
+    bounds = controller_settings['ControllerSettings']['boundary_conditions']
+    voltage_min = bounds['minimum_voltage']
+    voltage_max = bounds['maximum_voltage']
+    temp_min = bounds['minimum_temperature']
+    temp_max = bounds['maximum_temperature']
 
-    # Log current state of the system
-    print(f"Current power setpoint of the heat pump: {power_set_point_hp}")
-    print(f"Current grid voltage: {voltage}")
-    print(f"Current temperature: {temperature}")
+    actions = controller_settings['ControllerSettings']['actions']
+    p_voltage = actions['p_change_for_voltage']
+    p_temp = actions['p_change_for_temperature']
 
-    # Priority 1: Adjust power based on voltage limits
+    # Determine what each objective independently wants (None = no opinion)
+    temp_desire = None
+    if temperature > temp_max:
+        temp_desire = 0
+    elif temperature < temp_min:
+        temp_desire = p_temp
+
+    voltage_desire = None
     if voltage < voltage_min:
-        power_set_point_hp -= p_adjust_step_size_voltage
-        print(f"Voltage {voltage} too low, decreasing heat pump power setpoint (consumption) to correct voltage.")
+        voltage_desire = 0
     elif voltage > voltage_max:
-        power_set_point_hp += p_adjust_step_size_voltage
-        print(f"Voltage {voltage} too high, increasing heat pump power setpoint (consumption) to correct voltage.")
-    else:
-        print()
+        voltage_desire = p_voltage
 
-    # Priority 2: Adjust power based on temperature needs (only if voltage is within limits)
-    if voltage_min <= voltage <= voltage_max:
-        if temperature > temp_max:
-            power_set_point_hp -= p_adjust_step_size_temp
-            print("Temperature is too high, reducing heat pump power setpoint of heatpump to cool down.")
-        elif temperature < temp_min:
-            power_set_point_hp += p_adjust_step_size_temp
-            print("Temperature is too low, increasing heat pump power setpoint of heatpump to warm up.")
+    if priority == "voltage":
+        # Voltage overrides: check voltage first, only do temperature if voltage OK
+        if voltage_desire is not None:
+            power_set_point_hp = voltage_desire
+        elif temp_desire is not None:
+            power_set_point_hp = temp_desire
+
+    elif priority == "temperature":
+        # Temperature overrides: check temperature first, only do voltage if temp OK
+        if temp_desire is not None:
+            power_set_point_hp = temp_desire
+        elif voltage_desire is not None:
+            power_set_point_hp = voltage_desire
+
+    elif priority == "equal":
+        # Both equally important: average the desired setpoints
+        desires = [d for d in (temp_desire, voltage_desire) if d is not None]
+        if desires:
+            power_set_point_hp = sum(desires) / len(desires)
 
     return power_set_point_hp

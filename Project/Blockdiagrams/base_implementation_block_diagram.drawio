@@ -1,0 +1,125 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.1">
+  <diagram name="Base Implementation Block Diagram" id="base-impl-diagram">
+    <mxGraphModel dx="1584" dy="883" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;" value="Base Implementation - Block Diagram" vertex="1">
+          <mxGeometry height="40" width="600" x="350" y="161" as="geometry" />
+        </mxCell>
+        <mxCell id="room" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" value="&lt;b&gt;Room (Thermal)&lt;/b&gt;&lt;br&gt;&lt;i&gt;Dynamic (ODE)&lt;/i&gt;&lt;br&gt;&lt;br&gt;dT/dt = (1/C)(Q_hp - (T - T_out)/R)&lt;br&gt;&lt;br&gt;State: T_room [°C]&lt;br&gt;C = 10 kJ/K&lt;br&gt;R = 0.05 K/W" vertex="1">
+          <mxGeometry height="160" width="240" x="120" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="heatpump" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" value="&lt;b&gt;Heat Pump&lt;/b&gt;&lt;br&gt;&lt;i&gt;Quasi-static (AE)&lt;/i&gt;&lt;br&gt;&lt;br&gt;Q_hp = 0.5 × P_set&lt;br&gt;&lt;br&gt;η = 0.5" vertex="1">
+          <mxGeometry height="120" width="240" x="120" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="controller" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" value="&lt;b&gt;Controller&lt;/b&gt;&lt;br&gt;&lt;i&gt;Quasi-static (logic)&lt;/i&gt;&lt;br&gt;&lt;br&gt;IF V ∉ [0.98, 1.02] OR&lt;br&gt;   T ∉ [15°C, 30°C]&lt;br&gt;THEN P ± 2 kW&lt;br&gt;&lt;br&gt;Voltage priority" vertex="1">
+          <mxGeometry height="140" width="240" x="120" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="grid" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;fontStyle=1" value="&lt;b&gt;Electric Grid&lt;/b&gt;&lt;br&gt;&lt;i&gt;Quasi-static (AE)&lt;/i&gt;&lt;br&gt;&lt;br&gt;PowerGridModel (AC power flow)&lt;br&gt;&lt;br&gt;• 95-bus distribution network&lt;br&gt;• V_rated = 400 V (L-L)&lt;br&gt;• cosφ = 0.95&lt;br&gt;• Slack bus at node 1&lt;br&gt;&lt;br&gt;Returns: V_smart [p.u.]" vertex="1">
+          <mxGeometry height="200" width="280" x="650" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="passive" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;dashed=1;" value="&lt;b&gt;Passive Consumers&lt;/b&gt;&lt;br&gt;(94 nodes)&lt;br&gt;&lt;br&gt;Load profiles:&lt;br&gt;combined_profiles_&lt;br&gt;one_year.csv&lt;br&gt;&lt;br&gt;1 year, Δt = 15 min" vertex="1">
+          <mxGeometry height="160" width="200" x="1040" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="t_out" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=center;verticalAlign=middle;dashed=1;" value="&lt;b&gt;T_outside&lt;/b&gt;&lt;br&gt;12°C" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_c_hp" edge="1" parent="1" source="controller" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=12;fontStyle=1;" target="heatpump" value="&lt;b&gt;P_set [W]&lt;/b&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_hp_r" edge="1" parent="1" source="heatpump" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=12;fontStyle=1;" target="room" value="&lt;b&gt;Q_hp [W]&lt;/b&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_tout_r" edge="1" parent="1" source="t_out" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;exitX=0.5;exitY=0;entryX=0.25;entryY=1;fontSize=11;dashed=1;entryDx=0;entryDy=0;exitDx=0;exitDy=0;" target="room" value="&lt;b&gt;T_out [°C]&lt;/b&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_r_c" edge="1" parent="1" source="room" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#CC0000;exitX=0;exitY=0.25;entryX=0;entryY=0.75;fontSize=12;fontStyle=1;curved=1;" target="controller" value="&lt;b&gt;T_room [°C]&lt;/b&gt;">
+          <mxGeometry relative="1" x="-0.2" y="-15" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="40" y="640" />
+              <mxPoint x="40" y="305" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow_c_g" edge="1" parent="1" source="controller" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=1;exitY=0.5;entryX=0;entryY=0.3;fontSize=12;fontStyle=1;" target="grid" value="&lt;b&gt;P_set (smart house) [W]&lt;/b&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="550" y="270" />
+              <mxPoint x="550" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow_g_c" edge="1" parent="1" source="grid" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#CC0000;exitX=0;exitY=0.7;fontSize=12;fontStyle=1;edgeStyle=orthogonalEdgeStyle;" value="&lt;b&gt;V_smart [p.u.]&lt;/b&gt;">
+          <mxGeometry relative="1" x="0.1" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="450" y="440" />
+              <mxPoint x="450" y="300" />
+              <mxPoint x="360" y="300" />
+            </Array>
+            <mxPoint x="360" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow_p_g" edge="1" parent="1" source="passive" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=11;dashed=1;" target="grid" value="&lt;b&gt;P_passive [W]&lt;/b&gt;&lt;br&gt;(94 loads)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" value="&lt;b&gt;Legend&lt;/b&gt;" vertex="1">
+          <mxGeometry height="220" width="280" x="650" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="legend1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;" value="🟢  Green: Dynamic model (ODE)" vertex="1">
+          <mxGeometry height="20" width="240" x="670" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="legend2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;" value="🔵  Blue: Quasi-static (algebraic)" vertex="1">
+          <mxGeometry height="20" width="240" x="670" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="legend3" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;" value="🟡  Yellow: Quasi-static (logic)" vertex="1">
+          <mxGeometry height="20" width="240" x="670" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="legend4" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;" value="🟣  Purple: Power flow solver" vertex="1">
+          <mxGeometry height="20" width="240" x="670" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="legend5" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;" value="━━  Blue solid: Control signals" vertex="1">
+          <mxGeometry height="20" width="240" x="670" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="legend6" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;" value="━━  Red solid: Feedback signals" vertex="1">
+          <mxGeometry height="20" width="240" x="670" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="notes_box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d79b00;fontSize=13;fontStyle=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;strokeWidth=2;" value="&lt;b&gt;Key Features&lt;/b&gt;" vertex="1">
+          <mxGeometry height="220" width="200" x="1000" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="note1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=11;" value="• Multi-paradigm co-sim" vertex="1">
+          <mxGeometry height="20" width="160" x="1020" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="note2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=11;" value="• 1 dynamic + 3 quasi-static" vertex="1">
+          <mxGeometry height="20" width="160" x="1020" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="note3" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=11;" value="• Δt = 15 min timestep" vertex="1">
+          <mxGeometry height="20" width="160" x="1020" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="note4" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=11;" value="• Gauss-Seidel sync" vertex="1">
+          <mxGeometry height="20" width="160" x="1020" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="note5" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=11;" value="• Voltage priority control" vertex="1">
+          <mxGeometry height="20" width="160" x="1020" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="note6" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=11;" value="• 1 year simulation" vertex="1">
+          <mxGeometry height="20" width="160" x="1020" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="exec1" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#0066CC;strokeColor=#0066CC;fontColor=#FFFFFF;fontSize=14;fontStyle=1;" value="1" vertex="1">
+          <mxGeometry height="30" width="30" x="90" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="exec2" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#0066CC;strokeColor=#0066CC;fontColor=#FFFFFF;fontSize=14;fontStyle=1;" value="2" vertex="1">
+          <mxGeometry height="30" width="30" x="90" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="exec3" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#0066CC;strokeColor=#0066CC;fontColor=#FFFFFF;fontSize=14;fontStyle=1;" value="3" vertex="1">
+          <mxGeometry height="30" width="30" x="90" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="exec4" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#9673a6;strokeColor=#9673a6;fontColor=#FFFFFF;fontSize=14;fontStyle=1;" value="4" vertex="1">
+          <mxGeometry height="30" width="30" x="620" y="385" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

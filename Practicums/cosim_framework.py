@@ -1,5 +1,7 @@
 """Co-simulation framework module. Contains Model and Manager classes for running the co-simulation."""
+import os
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class Model:
@@ -18,109 +20,120 @@ class Model:
 
 class Manager:
     """The orchestrator manager for managing the data exchanged between the coupled models.
-    
-    NOTE: Currently, it is hardcoded to work with a particular sequence of execution of the coupled
-    models as define in run_co_simulation.py.
+
+    Supports one or more smart consumers, each with an independent room model
+    but sharing the same heat-pump function and controller logic.
     """
-    
-    def __init__(self, models: list[Model], settings_configuration: dict):
-        self.models = models
-        self.electric_grid = models[0]  # First model is the electric grid
-        self.heat_pump = models[1]  # Second model is the heat pump
-        self.room = models[2]  # Third model is the room
-        self.controller = models[-1]  # Last model is the controller
+
+    def __init__(
+        self,
+        electric_grid: Model,
+        heat_pump: Model,
+        controller: Model,
+        smart_consumers: dict[str, dict],
+        settings_configuration: dict,
+    ):
+        self.electric_grid = electric_grid
+        self.heat_pump = heat_pump
+        self.controller = controller
+        self.smart_consumers = smart_consumers
         self.settings_configuration = settings_configuration
 
-        # Placeholders for results (filled in run_simulation)
-        self.times: list[float] | None = None
-        self.voltages: list[float] | None = None
-        self.temperatures: list[float] | None = None
-        self.power_setpoints: list[float] | None = None
-        self.heat_productions: list[float] | None = None
-
     def run_simulation(self):
-        # Extract the relevant simulation parameters from the configuration
         config = self.settings_configuration
         config_id = config['InitializationSettings']['config_id']
         start_time = config['InitializationSettings']['time']['start_time']
         end_time = config['InitializationSettings']['time']['end_time']
         delta_t = config['InitializationSettings']['time']['delta_t']
-        hp_power_setpoint = config['InitializationSettings']['initial_conditions']['heat_pump']['power_set_point']
-        room_temperature = config['InitializationSettings']['initial_conditions']['room']['temperature']
 
-        # Initialize lists to store data for plotting
+        grid_topology = pd.read_csv(config['InitializationSettings']['grid_topology'])
+        passive_consumer_power_setpoints = pd.read_csv(
+            config['InitializationSettings']['passive_consumers_power_setpoints'],
+            index_col="snapshots", parse_dates=True,
+        )
+
+        hp_initial = config['InitializationSettings']['initial_conditions']['heat_pump']['power_set_point']
+
+        # Per-consumer state: each gets independent HP setpoint, room, and history
+        state = {}
+        for name, info in self.smart_consumers.items():
+            state[name] = {
+                "room": info["room"],
+                "hp_power_setpoint": hp_initial,
+                "voltages": [],
+                "temperatures": [],
+                "power_setpoints": [],
+                "heat_productions": [],
+            }
+
         times = []
-        voltages = []
-        temperatures = []
-        power_setpoints = []
-        heat_productions = []
-
-        print("===============================================================")
-        print(f"Starting simulation at time {start_time}, ending at {end_time}, with time step delta_t: {delta_t}\n")
-        print(f"Initial heat pump power_setpoint: {hp_power_setpoint}\n Initial heat pump temperature: {room_temperature}\n")
-        print("===============================================================")
-
         time_steps = int((end_time - start_time) / delta_t)
 
+        print("===============================================================")
+        print(f"Starting simulation | t={start_time}..{end_time}, delta_t={delta_t}")
+        print(f"Smart consumers: {list(state.keys())}")
+        print("===============================================================")
+
         for step in range(time_steps):
-            current_time = start_time + step * delta_t
-            print(f"Time step {step} | Current time: {current_time:.2f}")
+            time_clock = start_time + step * delta_t
+            corresponding_time = passive_consumer_power_setpoints.index[step]
 
-            times.append(current_time)
+            # Collect current setpoints for all smart consumers
+            setpoints = {n: s["hp_power_setpoint"] for n, s in state.items()}
 
-            # Update: compute new state based on the current power setpoint of the heat pump
-            voltage = self.electric_grid.calculate(hp_power_setpoint)
-            heat_production_from_hp = self.heat_pump.calculate(hp_power_setpoint)
-            room_temperature = self.room.calculate(heat_production_from_hp)
+            # Single power-flow run with all smart consumer injections
+            all_voltages = self.electric_grid.calculate(
+                passive_consumer_power_setpoints, setpoints, grid_topology, corresponding_time,
+            )
 
-            # Adjust power setpoint using the controller
-            hp_power_setpoint =  self.controller.calculate(hp_power_setpoint, voltage, room_temperature)
-            print("-----------------------------------------------------------")
-            print(f"New power setpoint: {hp_power_setpoint}")
-            print("===========================================================")
+            # Update each smart consumer independently
+            for name, s in state.items():
+                voltage = all_voltages["consumers"][name]
+                heat_prod = self.heat_pump.calculate(s["hp_power_setpoint"])
+                temperature = s["room"].calculate(heat_prod)
+                s["hp_power_setpoint"] = self.controller.calculate(
+                    s["hp_power_setpoint"], voltage, temperature,
+                )
+                s["voltages"].append(voltage)
+                s["temperatures"].append(temperature)
+                s["power_setpoints"].append(s["hp_power_setpoint"])
+                s["heat_productions"].append(heat_prod)
 
-            voltages.append(voltage)
-            temperatures.append(room_temperature)
-            power_setpoints.append(hp_power_setpoint)
-            heat_productions.append(heat_production_from_hp)
+            times.append(time_clock)
 
-        # Store results on the instance for external analysis
-        self.times = times
-        self.voltages = voltages
-        self.temperatures = temperatures
-        self.power_setpoints = power_setpoints
-        self.heat_productions = heat_productions
+        self.plot_results(times, state, config_id)
 
-        self.plot_results(times, voltages, temperatures, power_setpoints, heat_productions, config_id)
-
-    def get_results(self) -> dict:
-        """Return simulation results for external analysis."""
-        return {
-            "times": self.times or [],
-            "voltages": self.voltages or [],
-            "temperatures": self.temperatures or [],
-            "power_setpoints": self.power_setpoints or [],
-            "heat_productions": self.heat_productions or [],
-        }
-
-    def plot_results(self, times, voltages, temperatures, power_setpoints, heat_productions, config_id):
+    def plot_results(self, times, consumer_state, config_id):
         plt.style.use('ggplot')
         _, axs = plt.subplots(2, 2, figsize=(12, 8))
 
-        plots = [
-            (axs[0, 0], times, voltages, "Voltage Over Time", "Time [min]", "Voltage [V]", 'blue'),
-            (axs[0, 1], times, temperatures, "Temperature Over Time", "Time [min]", "Temperature [°C]", 'red'),
-            (axs[1, 0], times, power_setpoints, "Heat Pump Power Setpoint Over Time", "Time [min]", "Power Setpoint [kW]", 'green'),
-            (axs[1, 1], times, heat_productions, "Heat Production Over Time", "Time [min]", "Heat Production [kW]", 'orange'),
+        metric_info = [
+            (axs[0, 0], "voltages",         "Voltage Over Time",                "Voltage [p.u.]"),
+            (axs[0, 1], "temperatures",      "Temperature Over Time",            "Temperature [°C]"),
+            (axs[1, 0], "power_setpoints",   "Heat Pump Power Setpoint Over Time", "Power Setpoint [W]"),
+            (axs[1, 1], "heat_productions",  "Heat Production Over Time",        "Heat Production [W]"),
         ]
 
-        for ax, x, y, title, xlabel, ylabel, color in plots:
-            ax.plot(x, y, color=color)
+        palette = ["#1f77b4", "#d62728", "#2ca02c", "#ff7f0e"]
+        linestyles = ["-", "--", "-.", ":"]
+
+        for ax, key, title, ylabel in metric_info:
+            for i, (name, s) in enumerate(consumer_state.items()):
+                ax.plot(
+                    times, s[key],
+                    color=palette[i % len(palette)],
+                    linestyle=linestyles[i % len(linestyles)],
+                    linewidth=1.5,
+                    label=name, alpha=0.85,
+                )
             ax.set_title(title, color='black')
-            ax.set_xlabel(xlabel, color='black')
+            ax.set_xlabel("Time [min]", color='black')
             ax.set_ylabel(ylabel, color='black')
             ax.tick_params(axis='x', colors='black')
             ax.tick_params(axis='y', colors='black')
+            if len(consumer_state) > 1:
+                ax.legend(fontsize='small')
 
         plt.tight_layout()
-        plt.savefig(f"results_config{config_id}.png")
+        save_dir = os.path.dirname(os.path.abspath(__file__))
+        plt.savefig(os.path.join(save_dir, f"results_config{config_id}.png"))

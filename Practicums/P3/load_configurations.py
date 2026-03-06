@@ -7,6 +7,7 @@ def load_configurations(configurations_folder_path: str) -> tuple[dict, list[dic
     """Load configurations from YAML files in the specified folder path."""
 
     config_files = [f for f in os.listdir(configurations_folder_path) if f.endswith('.yaml')]
+    controller_configuration = None
     initialization_configurations = {}
 
     for config_file in config_files:
@@ -22,5 +23,10 @@ def load_configurations(configurations_folder_path: str) -> tuple[dict, list[dic
             except KeyError as e:
                 raise KeyError(f"Configuration file {config_file} is missing the 'config_id' key.") from e
             initialization_configurations[f"config {config_id}"] = config_data
-    
+
+    if controller_configuration is None:
+        raise FileNotFoundError(
+            f"No 'controller_config.yaml' found in {configurations_folder_path}. "
+            "Add controller_config.yaml to load controller settings."
+        )
     return controller_configuration, initialization_configurations

@@ -16,16 +16,10 @@ class RoomFunction:
 
     def __call__(self, heat_production_from_hp: float) -> float:
         """
-        Callable method to update the room temperature during the simulation.
+        Callable method to update the room temperature during the simulation."""
+        # Calculate heat loss to the environment
+        heat_loss = (self.room_temp - self.outside_temp) / self.room_tr
 
-        Uses the trapezoidal discretization (Lecture 2, slide 28):
-          (T_{i+1} - T_i) / dt = 0.5 * [f(T_i) + f(T_{i+1})]
-        Solved in closed form for this linear ODE.
-        """
-        alpha = self.delta_t / (2 * self.room_tc * self.room_tr)
-        self.room_temp = (
-            self.room_temp * (1 - alpha)
-            + self.delta_t * heat_production_from_hp / self.room_tc
-            + 2 * alpha * self.outside_temp
-        ) / (1 + alpha)
+        # Update room temperature using the discrete-time equation
+        self.room_temp += self.delta_t * (heat_production_from_hp - heat_loss) / self.room_tc
         return self.room_temp

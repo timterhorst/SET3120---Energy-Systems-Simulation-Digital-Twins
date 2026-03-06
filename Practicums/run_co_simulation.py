@@ -9,65 +9,41 @@ from heat_pump import heat_pump_function
 from load_configurations import load_configurations
 from room import RoomFunction
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 1. Load configurations from the 'configurations' folder (next to this script)
-_config_dir = os.path.dirname(os.path.abspath(__file__))
-configurations_folder_path = os.path.join(_config_dir, 'configurations')
+# 1. Load configurations from the 'configurations' folder
+configurations_folder_path = os.path.join(SCRIPT_DIR, 'configurations')
 controller_config, settings_configs = load_configurations(configurations_folder_path)
 
-print(settings_configs)
+# Resolve relative data paths in settings configs to absolute paths
+for config in settings_configs.values():
+    init = config['InitializationSettings']
+    for key in ('passive_consumers_power_setpoints', 'grid_topology'):
+        init[key] = os.path.join(SCRIPT_DIR, init[key])
 
-# Currently, 3 settings configurations are loaded
-first_settings_config = settings_configs["config 1"]
-second_settings_config = settings_configs["config 2"]
-third_settings_config = settings_configs["config 3"]
-fourth_settings_config = settings_configs["config 4"]
-fifth_settings_config = settings_configs["config 5"] 
-sixth_settings_config = settings_configs["config 6"]   
-
-# Create model instances by wrapping the functions with the Model class 
+# 2. Create model instances
 electric_grid_model = Model(electric_grid_function)
 heat_pump_model = Model(heat_pump_function)
-controller_model = Model(partial(controller_function, controller_settings=controller_config))
+# Change priority to "voltage", "temperature", or "equal"
+CONTROLLER_PRIORITY = "voltage"
+controller_model = Model(partial(
+    controller_function, controller_settings=controller_config, priority=CONTROLLER_PRIORITY,
+))
 
-# Run with the second settings_configuration
-room_model = Model(RoomFunction(first_settings_config))
+sim_config = settings_configs["config 1"]
 
-models = [electric_grid_model, heat_pump_model, room_model, controller_model]
-manager = Manager(models, first_settings_config)
+smart_consumers = {
+    "Customer_94": {"room": Model(RoomFunction(sim_config))},
+    "Customer_95": {"room": Model(RoomFunction(sim_config))},
+}
+
+# 3. Run co-simulation
+manager = Manager(
+    electric_grid=electric_grid_model,
+    heat_pump=heat_pump_model,
+    controller=controller_model,
+    smart_consumers=smart_consumers,
+    settings_configuration=sim_config,
+)
 manager.run_simulation()
 
-# Run with the second settings_configuration
-room_model = Model(RoomFunction(second_settings_config))
-
-models = [electric_grid_model, heat_pump_model, room_model, controller_model]
-manager = Manager(models, second_settings_config)
-manager.run_simulation()
-
-# Run with the third settings_configuration
-room_model = Model(RoomFunction(third_settings_config))
-
-models = [electric_grid_model, heat_pump_model, room_model, controller_model]
-manager = Manager(models, third_settings_config)
-manager.run_simulation()
-
-# Run with the fourth settings_configuration
-room_model = Model(RoomFunction(fourth_settings_config))
-
-models = [electric_grid_model, heat_pump_model, room_model, controller_model]
-manager = Manager(models, fourth_settings_config)
-manager.run_simulation()
-
-# Run with the fifth settings_configuration
-room_model = Model(RoomFunction(fifth_settings_config))
-
-models = [electric_grid_model, heat_pump_model, room_model, controller_model]
-manager = Manager(models, fifth_settings_config)
-manager.run_simulation()
-
-# Run with the sixth settings_configuration
-room_model = Model(RoomFunction(sixth_settings_config))
-
-models = [electric_grid_model, heat_pump_model, room_model, controller_model]
-manager = Manager(models, sixth_settings_config)
-manager.run_simulation()
