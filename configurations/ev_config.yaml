@@ -1,0 +1,22 @@
+EVSettings:
+  battery:
+    capacity_kwh: 50           # Battery capacity [kWh]
+    efficiency_charge: 0.90    # Charging efficiency η_ch [-]
+    efficiency_discharge: 0.85 # Discharging efficiency η_dis [-]
+    initial_soc: 1.0           # Initial state of charge [-] (1.0 = fully charged)
+  charging:
+    p_charge_max_w: 7400       # Max charging power [W] (Level 2, 32A @ 230V)
+    p_discharge_max_w: 3700    # Max V2G discharge power [W] (conservative)
+    soc_min_v2g: 0.40          # Minimum SOC for V2G activation [-]
+    voltage_min: 0.98          # Undervoltage threshold [p.u.] — should match grid requirements
+    voltage_max: 1.02          # Overvoltage threshold [p.u.] — should match grid requirements
+  driver:
+    departure_earliest: 360    # Earliest departure [min from midnight] (06:00)
+    departure_latest: 420      # Latest departure [min from midnight] (07:00)
+    arrival_earliest: 960      # Earliest arrival [min from midnight] (16:00)
+    arrival_latest: 1020       # Latest arrival [min from midnight] (17:00)
+    soc_depletion_min: 0.0     # Min daily SOC depletion [-] (0% = no driving)
+    soc_depletion_max: 0.90    # Max daily SOC depletion [-] (return SOC in ~10–100%)
+    temp_min_home: 20          # Thermostat lower bound when home [°C]
+    temp_min_away: 10          # Thermostat lower bound when away [°C] (frost protection)
+    random_seed: 42            # RNG seed for reproducibility (null for non-deterministic)
