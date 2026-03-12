@@ -7,3 +7,8 @@ pyyaml>=6.0
 
 # Optional dependencies (used in practicum)
 pandapower>=2.14.0
+
+# Forecasting module (Practicums/forecasting_module.ipynb)
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+torch>=2.0.0
