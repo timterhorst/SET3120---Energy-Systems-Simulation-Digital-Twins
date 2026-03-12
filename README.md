@@ -44,3 +44,13 @@ Master's level course project at TU Delft implementing a Smart House in a Smart 
 2. Install dependencies: `pip install -r requirements.txt`
 3. Run practicum code from `practicum-work` branch
 4. Base implementation will be merged into `project` branch in Week 5
+
+## Run base co-simulation
+
+From the project root (where this README lives):
+
+```bash
+python -m src.run_co_simulation
+```
+
+Results are saved as `results_config{id}.png` in the project root. Configurations and data paths in YAML are relative to the project root.
