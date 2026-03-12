@@ -39,7 +39,17 @@ class Manager:
         self.smart_consumers = smart_consumers
         self.settings_configuration = settings_configuration
 
-    def run_simulation(self):
+    def _plottable_state(self, state):
+        """Extract only the time-series data from state (for saving/plotting)."""
+        return {
+            name: {
+                k: list(v) for k, v in s.items()
+                if k in ("voltages", "temperatures", "power_setpoints", "heat_productions")
+            }
+            for name, s in state.items()
+        }
+
+    def run_simulation(self, previous_results=None):
         config = self.settings_configuration
         config_id = config['InitializationSettings']['config_id']
         start_time = config['InitializationSettings']['time']['start_time']
@@ -101,9 +111,15 @@ class Manager:
 
             times.append(time_clock)
 
-        self.plot_results(times, state, config_id)
+        plottable_state = self._plottable_state(state)
+        self.plot_results(times, plottable_state, config_id, previous_results=previous_results)
+        return times, plottable_state
 
-    def plot_results(self, times, consumer_state, config_id):
+    def plot_results(self, times, consumer_state, config_id, previous_results=None):
+        """
+        Plot simulation results. If previous_results is given, plot both original and
+        forecasted runs on the same axes. previous_results is (times_prev, state_prev).
+        """
         plt.style.use('ggplot')
         _, axs = plt.subplots(2, 2, figsize=(12, 8))
 
@@ -115,24 +131,44 @@ class Manager:
         ]
 
         palette = ["#1f77b4", "#d62728", "#2ca02c", "#ff7f0e"]
-        linestyles = ["-", "--", "-.", ":"]
+        linestyles_single = ["-", "--", "-.", ":"]
+        # For comparison: solid = original, dashed = forecasted
+        linestyle_original, linestyle_forecasted = "-", "--"
 
         for ax, key, title, ylabel in metric_info:
-            for i, (name, s) in enumerate(consumer_state.items()):
-                ax.plot(
-                    times, s[key],
-                    color=palette[i % len(palette)],
-                    linestyle=linestyles[i % len(linestyles)],
-                    linewidth=1.5,
-                    label=name, alpha=0.85,
-                )
+            if previous_results is None:
+                for i, (name, s) in enumerate(consumer_state.items()):
+                    ax.plot(
+                        times, s[key],
+                        color=palette[i % len(palette)],
+                        linestyle=linestyles_single[i % len(linestyles_single)],
+                        linewidth=1.5,
+                        label=name, alpha=0.85,
+                    )
+            else:
+                times_prev, state_prev = previous_results
+                for i, (name, s) in enumerate(state_prev.items()):
+                    ax.plot(
+                        times_prev, s[key],
+                        color=palette[i % len(palette)],
+                        linestyle=linestyle_original,
+                        linewidth=1.5,
+                        label=f"{name} (Original)", alpha=0.85,
+                    )
+                for i, (name, s) in enumerate(consumer_state.items()):
+                    ax.plot(
+                        times, s[key],
+                        color=palette[i % len(palette)],
+                        linestyle=linestyle_forecasted,
+                        linewidth=1.5,
+                        label=f"{name} (Forecasted)", alpha=0.85,
+                    )
             ax.set_title(title, color='black')
             ax.set_xlabel("Time [min]", color='black')
             ax.set_ylabel(ylabel, color='black')
             ax.tick_params(axis='x', colors='black')
             ax.tick_params(axis='y', colors='black')
-            if len(consumer_state) > 1:
-                ax.legend(fontsize='small')
+            ax.legend(fontsize='small')
 
         plt.tight_layout()
         save_dir = os.path.dirname(os.path.abspath(__file__))

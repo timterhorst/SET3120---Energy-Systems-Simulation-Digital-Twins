@@ -1,7 +1,7 @@
 """Heat pump model."""
 
 
-def heat_pump_function(power_setpoint: float, COP: float = 3.0) -> float:
+def heat_pump_function(power_setpoint: float, COP: float = 0.5) -> float:
     """Compute heat production from electric power using Coefficient of Performance.
 
     Parameters
@@ -9,7 +9,7 @@ def heat_pump_function(power_setpoint: float, COP: float = 3.0) -> float:
     power_setpoint : float
         Electric power consumed by the heat pump [W].
     COP : float, optional
-        Coefficient of Performance [-], default 3.0 (typical air-source HP).
+        Coefficient of Performance [-], default 0.5 (P4 setup: heat = 0.5 * power_setpoint, max 1000 W).
 
     Returns
     -------
