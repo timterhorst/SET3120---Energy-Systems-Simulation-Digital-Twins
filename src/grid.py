@@ -48,7 +48,7 @@ def update_active_power_data_frame_with_smart_consumer_power_setpoint(
     time_step: pd.DatetimeIndex,
 ) -> pd.DataFrame:
     """Update active power data frame with smart consumer power setpoint."""
-    active_power_df.loc[time_step, smart_consumer_name_in_active_power_df] = smart_consumer_power_setpoint
+    active_power_df.loc[time_step, smart_consumer_name_in_active_power_df] += smart_consumer_power_setpoint
     return active_power_df
 
 
