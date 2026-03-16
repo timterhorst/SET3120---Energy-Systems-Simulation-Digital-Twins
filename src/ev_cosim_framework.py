@@ -48,12 +48,15 @@ class EVManager(Manager):
         start_time = config['InitializationSettings']['time']['start_time']
         end_time = config['InitializationSettings']['time']['end_time']
         delta_t = config['InitializationSettings']['time']['delta_t']
+        load_scale = config['InitializationSettings'].get('load_scale', 1.0)
 
         grid_topology = pd.read_csv(config['InitializationSettings']['grid_topology'])
         passive_consumer_power_setpoints = pd.read_csv(
             config['InitializationSettings']['passive_consumers_power_setpoints'],
             index_col="snapshots", parse_dates=True,
         )
+        if load_scale != 1.0:
+            passive_consumer_power_setpoints = passive_consumer_power_setpoints * load_scale
 
         # Initial conditions
         hp_power_setpoint = config['InitializationSettings']['initial_conditions']['heat_pump']['power_set_point']
@@ -72,16 +75,18 @@ class EVManager(Manager):
         temp_min_dynamics = []
 
         time_steps = int((end_time - start_time) / delta_t)
+        datetime_index = passive_consumer_power_setpoints.index[:time_steps]
 
         print("=" * 65)
-        print(f"EV + V2G Co-Simulation | t=[{start_time}, {end_time}] min | dt={delta_t} min")
+        print(f"EV + V2G Co-Simulation | config {config_id} | load_scale={load_scale}")
+        print(f"t=[{start_time}, {end_time}] min | dt={delta_t} min")
         print(f"Initial HP power: {hp_power_setpoint} W | "
               f"Initial SOC: {self.ev_battery.process_model.soc:.0%}")
         print("=" * 65)
 
         for step in range(time_steps):
             time_clock = start_time + step * delta_t
-            ts = passive_consumer_power_setpoints.index[step]
+            ts = datetime_index[step]
 
             # --- Step 1: Driver Model ---
             is_home, temp_min_dynamic, soc_depletion = self.driver.calculate(time_clock)
@@ -132,7 +137,7 @@ class EVManager(Manager):
                       f"P_ev={p_charge:.0f}W | home={is_home}")
 
         print("=" * 65)
-        print("Simulation complete. Generating plots...")
+        print("Simulation complete. Generating plots & saving results...")
 
         data = dict(
             times=times, voltages=voltages, temperatures=temperatures,
@@ -144,6 +149,20 @@ class EVManager(Manager):
         self._plot_base_overview(data, config_id)
         self._plot_ev_overview(data, config_id)
         self._plot_weekly_zoom(data, config_id)
+        self._save_results(data, config_id, datetime_index)
+
+    def _save_results(self, data, config_id, datetime_index):
+        """Save EV simulation time-series to a compressed .npz file."""
+        import os
+        results_dir = os.path.join('results')
+        os.makedirs(results_dir, exist_ok=True)
+        path = os.path.join(results_dir, f"config{config_id}_ev.npz")
+
+        save_dict = {k: np.array(v) for k, v in data.items()}
+        save_dict['datetime_index'] = np.array(datetime_index.astype(str))
+
+        np.savez_compressed(path, **save_dict)
+        print(f"  Results saved   → {path}")
 
     # ------------------------------------------------------------------
     # Figure 1: Base-compatible 2×2 (matches base Manager output format)
