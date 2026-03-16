@@ -55,6 +55,7 @@ Thumbs.db
 
 # Results and outputs
 results/
+!results/*.npz
 outputs/
 plots/
 *.png

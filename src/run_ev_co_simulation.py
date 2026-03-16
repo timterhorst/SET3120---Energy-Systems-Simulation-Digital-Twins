@@ -1,9 +1,11 @@
 """Run the EV + V2G co-simulation.
 
 Usage (from the project root):
-    python -m src.run_ev_co_simulation
+    python -m src.run_ev_co_simulation          # defaults to config 1
+    python -m src.run_ev_co_simulation 99       # runs config 99 (3x stressed)
 """
 import os
+import sys
 from functools import partial
 
 import yaml
@@ -24,11 +26,17 @@ from .room import RoomFunction
 configurations_folder_path = './configurations'
 controller_config, settings_configs = load_configurations(configurations_folder_path)
 
+config_id = sys.argv[1] if len(sys.argv) > 1 else "1"
+config_key = f"config {config_id}"
+if config_key not in settings_configs:
+    print(f"ERROR: '{config_key}' not found. Available: {list(settings_configs.keys())}")
+    sys.exit(1)
+
 ev_config_path = os.path.join(configurations_folder_path, 'ev_config.yaml')
 with open(ev_config_path, 'r') as f:
     ev_config = yaml.safe_load(f)
 
-settings = settings_configs["config 1"]
+settings = settings_configs[config_key]
 ev_settings = ev_config['EVSettings']
 delta_t = settings['InitializationSettings']['time']['delta_t']
 

@@ -1,5 +1,6 @@
 InitializationSettings:
   config_id: 1  # Unique configuration id (plotted results will be saved with this id)
+  load_scale: 1  # Multiplier for passive consumer loads (1 = nominal, 3 = stressed)
   time:
     start_time: 0    # Start time (minutes)
     end_time: 525600 # End time (minutes, 365 days * 24 hours * 60 minutes)
