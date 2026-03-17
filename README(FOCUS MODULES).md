@@ -24,6 +24,12 @@ python -m src.run_co_simulation 1
 # With EV/V2G, nominal loading (config 1)
 python -m src.run_ev_co_simulation 1
 
+# Base (no EV), nominal loading (config 1) using forecasted passive consumers
+python -m src.run_co_simulation 1 --use-forecasted
+
+# With EV/V2G, nominal loading (config 1) using forecasted passive consumers
+python -m src.run_ev_co_simulation 1 --use-forecasted
+
 # Base (no EV), stressed loading (config 99, 3× passive loads)
 python -m src.run_co_simulation 99
 
@@ -44,9 +50,15 @@ python -m src.analyze_results
 
 **Saved time-series** (saved in `results/` as compressed `.npz`):
 - `results/config1_base.npz`, `results/config1_ev.npz`
+- `results/config1_base_forecasted.npz`, `results/config_ev_forecasted.npz` (config 1 with `--use-forecasted`)
 - `results/config99_base.npz`, `results/config99_ev.npz`
 
 The `.npz` files contain the full-year arrays (15-minute resolution) used by `src/analyze_results.py`.
+
+### Forecasted passive-consumer dataset
+
+Both `src/run_co_simulation.py` and `src/run_ev_co_simulation.py` support `--use-forecasted`.
+When enabled, the simulation uses `data/combined_active_power_forecasted.csv` as the passive-consumer time-series (instead of the default dataset configured in `configurations/config*.yaml`).
 
 ## Synchronization sequence (EV run)
 
@@ -100,8 +112,8 @@ All EV parameters live in `configurations/ev_config.yaml` (battery size, efficie
 
 ```
 src/
-├── run_co_simulation.py        # Base entry point (supports config id CLI arg)
-├── run_ev_co_simulation.py     # EV/V2G entry point (supports config id CLI arg)
+├── run_co_simulation.py        # Base entry point (supports config id + --use-forecasted)
+├── run_ev_co_simulation.py     # EV/V2G entry point (supports config id + --use-forecasted)
 ├── analyze_results.py          # Loads results/*.npz and prints tables/diagnostics
 ├── cosim_framework.py          # Base Manager: supports load_scale, saves results/config{id}_base.npz
 ├── ev_cosim_framework.py       # EVManager: supports load_scale, saves results/config{id}_ev.npz
