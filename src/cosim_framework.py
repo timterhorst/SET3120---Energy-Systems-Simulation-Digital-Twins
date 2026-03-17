@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from typing import Any
 
 
 class Model:
@@ -133,11 +134,25 @@ class Manager:
             p_at_grid=p_at_grid_over_time,
         )
 
+    def _is_forecasted_config1(self, config_id: int | str) -> bool:
+        """True iff this run is config 1 and uses the forecasted dataset."""
+        if str(config_id) != "1":
+            return False
+        dataset = (
+            self.settings_configuration
+            .get("InitializationSettings", {})
+            .get("passive_consumers_power_setpoints")
+        )
+        return dataset == "data/combined_active_power_forecasted.csv"
+
     def _save_results(self, config_id, datetime_index, **arrays):
         """Save simulation time-series to a compressed .npz file."""
         results_dir = os.path.join('results')
         os.makedirs(results_dir, exist_ok=True)
-        path = os.path.join(results_dir, f"config{config_id}_base.npz")
+        if self._is_forecasted_config1(config_id):
+            path = os.path.join(results_dir, "config1_base_forecasted.npz")
+        else:
+            path = os.path.join(results_dir, f"config{config_id}_base.npz")
 
         save_dict = {k: np.array(v) for k, v in arrays.items()}
         save_dict['datetime_index'] = np.array(datetime_index.astype(str))
@@ -146,6 +161,13 @@ class Manager:
         print(f"  Results saved   → {path}")
 
     def plot_results(self, times, voltages, temperatures, power_setpoints, heat_productions, config_id):
+        """
+        Plot base simulation results.
+
+        Optionally, a comparison dataset can be overlaid by passing a dict with
+        keys: times, voltages, temperatures, power_setpoints, heat_productions.
+        Use `plot_results_with_comparison(...)` to provide this cleanly.
+        """
         plt.style.use('ggplot')
         _, axs = plt.subplots(2, 2, figsize=(12, 8))
 
@@ -166,3 +188,49 @@ class Manager:
 
         plt.tight_layout()
         plt.savefig(f"results_config{config_id}.png")
+        plt.close()
+
+    def plot_results_with_comparison(
+        self,
+        *,
+        base: dict[str, Any],
+        comparison: dict[str, Any],
+        config_id: int | str,
+        base_label: str = "Original",
+        comparison_label: str = "Forecasted",
+        filename: str | None = None,
+    ) -> None:
+        """
+        Plot base results with an overlaid comparison dataset.
+
+        Both `base` and `comparison` are expected to contain:
+          - times
+          - voltages
+          - temperatures
+          - power_setpoints
+          - heat_productions
+        """
+        plt.style.use('ggplot')
+        _, axs = plt.subplots(2, 2, figsize=(12, 8))
+
+        plots = [
+            (axs[0, 0], "times", "voltages", "Voltage Over Time", "Time [min]", "Voltage [V]", 'blue'),
+            (axs[0, 1], "times", "temperatures", "Temperature Over Time", "Time [min]", "Temperature [°C]", 'red'),
+            (axs[1, 0], "times", "power_setpoints", "Heat Pump Power Setpoint Over Time", "Time [min]", "Power Setpoint [W]", 'green'),
+            (axs[1, 1], "times", "heat_productions", "Heat Production Over Time", "Time [min]", "Heat Production [W]", 'orange'),
+        ]
+
+        for ax, xk, yk, title, xlabel, ylabel, color in plots:
+            ax.plot(base[xk], base[yk], color=color, linewidth=1.0, label=base_label)
+            ax.plot(comparison[xk], comparison[yk], color=color, linewidth=1.0, linestyle="--", alpha=0.85, label=comparison_label)
+            ax.set_title(title, color='black')
+            ax.set_xlabel(xlabel, color='black')
+            ax.set_ylabel(ylabel, color='black')
+            ax.tick_params(axis='x', colors='black')
+            ax.tick_params(axis='y', colors='black')
+            ax.legend(fontsize=8)
+
+        plt.tight_layout()
+        out = filename or f"results_config{config_id}_comparison.png"
+        plt.savefig(out, dpi=150)
+        plt.close()

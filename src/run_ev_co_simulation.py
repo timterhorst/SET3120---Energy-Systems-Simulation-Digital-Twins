@@ -3,7 +3,10 @@
 Usage (from the project root):
     python -m src.run_ev_co_simulation          # defaults to config 1
     python -m src.run_ev_co_simulation 99       # runs config 99 (3x stressed)
+    python -m src.run_ev_co_simulation --use-forecasted
+    python -m src.run_ev_co_simulation 99 --use-forecasted
 """
+import argparse
 import os
 import sys
 from functools import partial
@@ -22,11 +25,31 @@ from .load_configurations import load_configurations
 from .room import RoomFunction
 
 
-# 1. Load configurations
-configurations_folder_path = './configurations'
-controller_config, settings_configs = load_configurations(configurations_folder_path)
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the EV + V2G co-simulation.")
+    parser.add_argument(
+        "config_id",
+        nargs="?",
+        default="1",
+        help="Configuration id (e.g. 1 or 99). Defaults to 1.",
+    )
+    parser.add_argument(
+        "--use-forecasted",
+        action="store_true",
+        help="Use the forecasted passive consumer dataset.",
+    )
+    return parser.parse_args(argv)
 
-config_id = sys.argv[1] if len(sys.argv) > 1 else "1"
+
+# 1. Load configurations
+args = _parse_args(sys.argv[1:])
+configurations_folder_path = './configurations'
+controller_config, settings_configs = load_configurations(
+    configurations_folder_path,
+    use_forecasted=args.use_forecasted,
+)
+
+config_id = args.config_id
 config_key = f"config {config_id}"
 if config_key not in settings_configs:
     print(f"ERROR: '{config_key}' not found. Available: {list(settings_configs.keys())}")

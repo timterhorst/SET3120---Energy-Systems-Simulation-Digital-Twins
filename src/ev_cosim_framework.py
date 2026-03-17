@@ -19,6 +19,7 @@ the base implementation where the controller reacts to the current-step grid sta
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from typing import Any
 
 from .cosim_framework import Manager, Model
 
@@ -156,7 +157,10 @@ class EVManager(Manager):
         import os
         results_dir = os.path.join('results')
         os.makedirs(results_dir, exist_ok=True)
-        path = os.path.join(results_dir, f"config{config_id}_ev.npz")
+        if self._is_forecasted_config1(config_id):
+            path = os.path.join(results_dir, "config_ev_forecasted.npz")
+        else:
+            path = os.path.join(results_dir, f"config{config_id}_ev.npz")
 
         save_dict = {k: np.array(v) for k, v in data.items()}
         save_dict['datetime_index'] = np.array(datetime_index.astype(str))
@@ -167,28 +171,43 @@ class EVManager(Manager):
     # ------------------------------------------------------------------
     # Figure 1: Base-compatible 2×2 (matches base Manager output format)
     # ------------------------------------------------------------------
-    def _plot_base_overview(self, data, config_id):
+    def _plot_base_overview(
+        self,
+        data: dict[str, Any],
+        config_id: int | str,
+        comparison: dict[str, Any] | None = None,
+        base_label: str = "Original",
+        comparison_label: str = "Forecasted",
+    ):
         plt.style.use('ggplot')
         _, axs = plt.subplots(2, 2, figsize=(12, 8))
 
         plots = [
-            (axs[0, 0], data['times'], data['voltages'],
-             "Voltage Over Time", "Time [min]", "Voltage [p.u.]", 'blue'),
-            (axs[0, 1], data['times'], data['temperatures'],
-             "Temperature Over Time", "Time [min]", "Temperature [°C]", 'red'),
-            (axs[1, 0], data['times'], data['hp_powers'],
-             "Heat Pump Power Setpoint Over Time", "Time [min]", "Power Setpoint [W]", 'green'),
-            (axs[1, 1], data['times'], data['heat_productions'],
-             "Heat Production Over Time", "Time [min]", "Heat Production [W]", 'orange'),
+            (axs[0, 0], 'voltages', "Voltage Over Time", "Time [min]", "Voltage [p.u.]", 'blue'),
+            (axs[0, 1], 'temperatures', "Temperature Over Time", "Time [min]", "Temperature [°C]", 'red'),
+            (axs[1, 0], 'hp_powers', "Heat Pump Power Setpoint Over Time", "Time [min]", "Power Setpoint [W]", 'green'),
+            (axs[1, 1], 'heat_productions', "Heat Production Over Time", "Time [min]", "Heat Production [W]", 'orange'),
         ]
 
-        for ax, x, y, title, xlabel, ylabel, color in plots:
-            ax.plot(x, y, color=color, linewidth=0.5)
+        for ax, yk, title, xlabel, ylabel, color in plots:
+            ax.plot(data['times'], data[yk], color=color, linewidth=0.6, label=base_label)
+            if comparison is not None:
+                ax.plot(
+                    comparison['times'],
+                    comparison[yk],
+                    color=color,
+                    linewidth=0.6,
+                    linestyle="--",
+                    alpha=0.85,
+                    label=comparison_label,
+                )
             ax.set_title(title, color='black')
             ax.set_xlabel(xlabel, color='black')
             ax.set_ylabel(ylabel, color='black')
             ax.tick_params(axis='x', colors='black')
             ax.tick_params(axis='y', colors='black')
+            if comparison is not None:
+                ax.legend(fontsize=7)
 
         plt.tight_layout()
         path = f"ev_results_base_overview_config{config_id}.png"
@@ -199,13 +218,30 @@ class EVManager(Manager):
     # ------------------------------------------------------------------
     # Figure 2: Full EV overview — all signals, full simulation
     # ------------------------------------------------------------------
-    def _plot_ev_overview(self, data, config_id):
+    def _plot_ev_overview(
+        self,
+        data: dict[str, Any],
+        config_id: int | str,
+        comparison: dict[str, Any] | None = None,
+        base_label: str = "Original",
+        comparison_label: str = "Forecasted",
+    ):
         plt.style.use('ggplot')
         fig, axs = plt.subplots(3, 2, figsize=(14, 10))
         t = data['times']
 
         # (0,0) Voltage + limit lines
-        axs[0, 0].plot(t, data['voltages'], color='blue', linewidth=0.3)
+        axs[0, 0].plot(t, data['voltages'], color='blue', linewidth=0.3, label=base_label)
+        if comparison is not None:
+            axs[0, 0].plot(
+                comparison['times'],
+                comparison['voltages'],
+                color='blue',
+                linewidth=0.3,
+                linestyle="--",
+                alpha=0.85,
+                label=comparison_label,
+            )
         axs[0, 0].axhline(0.98, color='red', linestyle='--', linewidth=0.8, label='V_min')
         axs[0, 0].axhline(1.02, color='red', linestyle='--', linewidth=0.8, label='V_max')
         axs[0, 0].set_title("Grid Voltage at Smart Consumer", color='black')
@@ -213,7 +249,17 @@ class EVManager(Manager):
         axs[0, 0].legend(fontsize=7)
 
         # (0,1) Temperature + dynamic temp_min
-        axs[0, 1].plot(t, data['temperatures'], color='red', linewidth=0.3, label='T_room')
+        axs[0, 1].plot(t, data['temperatures'], color='red', linewidth=0.3, label=f"T_room ({base_label})")
+        if comparison is not None:
+            axs[0, 1].plot(
+                comparison['times'],
+                comparison['temperatures'],
+                color='red',
+                linewidth=0.3,
+                linestyle="--",
+                alpha=0.85,
+                label=f"T_room ({comparison_label})",
+            )
         axs[0, 1].plot(t, data['temp_min_dynamics'], color='blue', linewidth=0.3,
                         alpha=0.6, label='temp_min (setback)')
         axs[0, 1].set_title("Room Temperature & Occupancy Setback", color='black')
@@ -221,18 +267,52 @@ class EVManager(Manager):
         axs[0, 1].legend(fontsize=7)
 
         # (1,0) HP power
-        axs[1, 0].plot(t, data['hp_powers'], color='green', linewidth=0.3)
+        axs[1, 0].plot(t, data['hp_powers'], color='green', linewidth=0.3, label=base_label)
+        if comparison is not None:
+            axs[1, 0].plot(
+                comparison['times'],
+                comparison['hp_powers'],
+                color='green',
+                linewidth=0.3,
+                linestyle="--",
+                alpha=0.85,
+                label=comparison_label,
+            )
         axs[1, 0].set_title("Heat Pump Power Setpoint", color='black')
         axs[1, 0].set_ylabel("Power [W]", color='black')
+        if comparison is not None:
+            axs[1, 0].legend(fontsize=7)
 
         # (1,1) EV charging power (positive = charging, negative = V2G)
-        axs[1, 1].plot(t, data['ev_powers'], color='purple', linewidth=0.3)
+        axs[1, 1].plot(t, data['ev_powers'], color='purple', linewidth=0.3, label=base_label)
+        if comparison is not None:
+            axs[1, 1].plot(
+                comparison['times'],
+                comparison['ev_powers'],
+                color='purple',
+                linewidth=0.3,
+                linestyle="--",
+                alpha=0.85,
+                label=comparison_label,
+            )
         axs[1, 1].axhline(0, color='black', linewidth=0.5)
         axs[1, 1].set_title("EV Charging Power (negative = V2G)", color='black')
         axs[1, 1].set_ylabel("Power [W]", color='black')
+        if comparison is not None:
+            axs[1, 1].legend(fontsize=7)
 
         # (2,0) SOC + V2G reserve line
-        axs[2, 0].plot(t, data['socs'], color='orange', linewidth=0.3)
+        axs[2, 0].plot(t, data['socs'], color='orange', linewidth=0.3, label=base_label)
+        if comparison is not None:
+            axs[2, 0].plot(
+                comparison['times'],
+                comparison['socs'],
+                color='orange',
+                linewidth=0.3,
+                linestyle="--",
+                alpha=0.85,
+                label=comparison_label,
+            )
         axs[2, 0].axhline(0.40, color='red', linestyle='--', linewidth=0.8,
                            label='V2G reserve (40%)')
         axs[2, 0].set_title("EV State of Charge", color='black')
@@ -241,10 +321,22 @@ class EVManager(Manager):
         axs[2, 0].legend(fontsize=7)
 
         # (2,1) Total power at connection point
-        axs[2, 1].plot(t, data['total_powers'], color='teal', linewidth=0.3)
+        axs[2, 1].plot(t, data['total_powers'], color='teal', linewidth=0.3, label=base_label)
+        if comparison is not None:
+            axs[2, 1].plot(
+                comparison['times'],
+                comparison['total_powers'],
+                color='teal',
+                linewidth=0.3,
+                linestyle="--",
+                alpha=0.85,
+                label=comparison_label,
+            )
         axs[2, 1].axhline(0, color='black', linewidth=0.5)
         axs[2, 1].set_title("Total Power at Node (P_hp + P_charge)", color='black')
         axs[2, 1].set_ylabel("Power [W]", color='black')
+        if comparison is not None:
+            axs[2, 1].legend(fontsize=7)
 
         for row in axs:
             for ax in row:
@@ -261,7 +353,16 @@ class EVManager(Manager):
     # ------------------------------------------------------------------
     # Figure 3: One-week zoom with home/away shading (x-axis in hours)
     # ------------------------------------------------------------------
-    def _plot_weekly_zoom(self, data, config_id, zoom_start_day=7, zoom_days=7):
+    def _plot_weekly_zoom(
+        self,
+        data: dict[str, Any],
+        config_id: int | str,
+        zoom_start_day: int = 7,
+        zoom_days: int = 7,
+        comparison: dict[str, Any] | None = None,
+        base_label: str = "Original",
+        comparison_label: str = "Forecasted",
+    ):
         t = np.array(data['times'])
 
         zoom_start = zoom_start_day * MINUTES_PER_DAY
@@ -284,6 +385,22 @@ class EVManager(Manager):
         zhome = np.array(data['is_homes'])[mask]
         ztot = np.array(data['total_powers'])[mask]
 
+        # Optional comparison slice (same mask logic, assumes comparable time base)
+        if comparison is not None:
+            ct = np.array(comparison['times'])
+            cmask = (ct >= zoom_start) & (ct < zoom_end)
+            if cmask.sum() == 0:
+                comparison = None
+            else:
+                cht = ct[cmask]
+                chours = (cht - zoom_start) / 60.0
+                czv = np.array(comparison['voltages'])[cmask]
+                cztemp = np.array(comparison['temperatures'])[cmask]
+                czhp = np.array(comparison['hp_powers'])[cmask]
+                czev = np.array(comparison['ev_powers'])[cmask]
+                czsoc = np.array(comparison['socs'])[cmask]
+                cztot = np.array(comparison['total_powers'])[cmask]
+
         plt.style.use('ggplot')
         fig, axs = plt.subplots(3, 2, figsize=(16, 11))
 
@@ -305,7 +422,9 @@ class EVManager(Manager):
                 ax.axvline(d * 24, color='black', ls=':', lw=0.4, alpha=0.4)
 
         # (0,0) Voltage + limits
-        axs[0, 0].plot(hours, zv, color='blue', linewidth=0.8)
+        axs[0, 0].plot(hours, zv, color='blue', linewidth=0.8, label=base_label)
+        if comparison is not None:
+            axs[0, 0].plot(chours, czv, color='blue', linewidth=0.8, linestyle="--", alpha=0.85, label=comparison_label)
         axs[0, 0].axhline(0.98, color='red', ls='--', lw=0.8, label='V limits')
         axs[0, 0].axhline(1.02, color='red', ls='--', lw=0.8)
         shade_away(axs[0, 0])
@@ -315,7 +434,9 @@ class EVManager(Manager):
         axs[0, 0].legend(fontsize=7)
 
         # (0,1) Temperature + dynamic setback
-        axs[0, 1].plot(hours, ztemp, color='red', linewidth=0.8, label='T_room')
+        axs[0, 1].plot(hours, ztemp, color='red', linewidth=0.8, label=f"T_room ({base_label})")
+        if comparison is not None:
+            axs[0, 1].plot(chours, cztemp, color='red', linewidth=0.8, linestyle="--", alpha=0.85, label=f"T_room ({comparison_label})")
         axs[0, 1].step(hours, ztmin, color='blue', linewidth=1.0, alpha=0.7,
                         where='post', label='temp_min setback')
         shade_away(axs[0, 1])
@@ -325,22 +446,32 @@ class EVManager(Manager):
         axs[0, 1].legend(fontsize=7)
 
         # (1,0) HP power
-        axs[1, 0].plot(hours, zhp, color='green', linewidth=0.8)
+        axs[1, 0].plot(hours, zhp, color='green', linewidth=0.8, label=base_label)
+        if comparison is not None:
+            axs[1, 0].plot(chours, czhp, color='green', linewidth=0.8, linestyle="--", alpha=0.85, label=comparison_label)
         shade_away(axs[1, 0])
         add_day_markers(axs[1, 0])
         axs[1, 0].set_title("Heat Pump Power", color='black')
         axs[1, 0].set_ylabel("Power [W]", color='black')
+        if comparison is not None:
+            axs[1, 0].legend(fontsize=7)
 
         # (1,1) EV charging power
-        axs[1, 1].plot(hours, zev, color='purple', linewidth=0.8)
+        axs[1, 1].plot(hours, zev, color='purple', linewidth=0.8, label=base_label)
+        if comparison is not None:
+            axs[1, 1].plot(chours, czev, color='purple', linewidth=0.8, linestyle="--", alpha=0.85, label=comparison_label)
         axs[1, 1].axhline(0, color='black', lw=0.5)
         shade_away(axs[1, 1])
         add_day_markers(axs[1, 1])
         axs[1, 1].set_title("EV Charging Power (grey = away)", color='black')
         axs[1, 1].set_ylabel("Power [W]", color='black')
+        if comparison is not None:
+            axs[1, 1].legend(fontsize=7)
 
         # (2,0) SOC + V2G reserve + home shading
-        axs[2, 0].plot(hours, zsoc, color='orange', linewidth=0.8)
+        axs[2, 0].plot(hours, zsoc, color='orange', linewidth=0.8, label=base_label)
+        if comparison is not None:
+            axs[2, 0].plot(chours, czsoc, color='orange', linewidth=0.8, linestyle="--", alpha=0.85, label=comparison_label)
         axs[2, 0].axhline(0.40, color='red', ls='--', lw=0.8, label='V2G reserve')
         shade_away(axs[2, 0])
         add_day_markers(axs[2, 0])
@@ -350,9 +481,13 @@ class EVManager(Manager):
         axs[2, 0].legend(fontsize=7)
 
         # (2,1) Total power at node with HP/EV breakdown
-        axs[2, 1].plot(hours, ztot, color='teal', linewidth=0.8, label='P_total')
-        axs[2, 1].plot(hours, zhp, color='green', linewidth=0.5, alpha=0.5, label='P_hp')
-        axs[2, 1].plot(hours, zev, color='purple', linewidth=0.5, alpha=0.5, label='P_ev')
+        axs[2, 1].plot(hours, ztot, color='teal', linewidth=0.8, label=f"P_total ({base_label})")
+        axs[2, 1].plot(hours, zhp, color='green', linewidth=0.5, alpha=0.5, label=f"P_hp ({base_label})")
+        axs[2, 1].plot(hours, zev, color='purple', linewidth=0.5, alpha=0.5, label=f"P_ev ({base_label})")
+        if comparison is not None:
+            axs[2, 1].plot(chours, cztot, color='teal', linewidth=0.8, linestyle="--", alpha=0.85, label=f"P_total ({comparison_label})")
+            axs[2, 1].plot(chours, czhp, color='green', linewidth=0.5, linestyle="--", alpha=0.35, label=f"P_hp ({comparison_label})")
+            axs[2, 1].plot(chours, czev, color='purple', linewidth=0.5, linestyle="--", alpha=0.35, label=f"P_ev ({comparison_label})")
         axs[2, 1].axhline(0, color='black', lw=0.5)
         shade_away(axs[2, 1])
         add_day_markers(axs[2, 1])
