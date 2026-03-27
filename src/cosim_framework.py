@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from typing import Any
 
+from .knmi_loader import load_knmi_temperature
+
 
 class Model:
     """Wrapper class for modeling any physical process (e.g. power flow, heat production, etc.)."""
@@ -78,12 +80,12 @@ class Manager:
 
         time_steps = int((end_time - start_time) / delta_t)
         datetime_index = passive_consumer_power_setpoints.index[:time_steps]
-    
+
+        knmi_temp = load_knmi_temperature("data/KNMI_temp_data.txt", n_steps=time_steps)
+
         for time_step in range(time_steps):
             time_clock = start_time + time_step * delta_t
             corresponding_time_in_dataframe = datetime_index[time_step]
-
-            # print(f"Time step {corresponding_time_in_dataframe} | Simulation time clock: {time_clock:.2f}")
 
             p_at_grid = hp_power_setpoint
 
@@ -92,7 +94,7 @@ class Manager:
             )
             smart_consumer_voltage = all_consumer_voltages["consumers"]["smart_consumer"]
             heat_production_from_hp = self.heat_pump.calculate(hp_power_setpoint)
-            room_temperature = self.room.calculate(heat_production_from_hp)
+            room_temperature = self.room.calculate(heat_production_from_hp, knmi_temp[time_step])
 
             hp_power_setpoint = self.controller.calculate(hp_power_setpoint, smart_consumer_voltage, room_temperature)
             # print("-----------------------------------------------------------")

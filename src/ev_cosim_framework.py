@@ -22,6 +22,7 @@ import pandas as pd
 from typing import Any
 
 from .cosim_framework import Manager, Model
+from .knmi_loader import load_knmi_temperature
 
 MINUTES_PER_DAY = 1440
 STEPS_PER_DAY = MINUTES_PER_DAY // 15  # 96 steps at dt=15 min
@@ -78,6 +79,8 @@ class EVManager(Manager):
         time_steps = int((end_time - start_time) / delta_t)
         datetime_index = passive_consumer_power_setpoints.index[:time_steps]
 
+        knmi_temp = load_knmi_temperature("data/KNMI_temp_data.txt", n_steps=time_steps)
+
         print("=" * 65)
         print(f"EV + V2G Co-Simulation | config {config_id} | load_scale={load_scale}")
         print(f"t=[{start_time}, {end_time}] min | dt={delta_t} min")
@@ -103,7 +106,7 @@ class EVManager(Manager):
             heat_production = self.heat_pump.calculate(hp_power_setpoint)
 
             # --- Step 4: Room ---
-            room_temperature = self.room.calculate(heat_production)
+            room_temperature = self.room.calculate(heat_production, knmi_temp[step])
 
             # --- Step 5: EV Battery ---
             soc = self.ev_battery.calculate(p_charge, soc_depletion)

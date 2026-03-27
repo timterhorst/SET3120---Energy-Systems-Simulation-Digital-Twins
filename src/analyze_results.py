@@ -11,6 +11,7 @@ import pandas as pd
 
 RESULTS_DIR = "results"
 TOTAL_STEPS = 35_040  # 365 days × 96 steps/day
+KNMI_PATH = "data/KNMI_temp_data.txt"
 
 
 def load(name: str) -> dict[str, np.ndarray] | None:
@@ -48,7 +49,119 @@ def print_sectioned_table(title: str, header: list[str],
     print()
 
 
+def _parse_knmi(filepath: str) -> tuple[np.ndarray, np.ndarray]:
+    """Parse KNMI hourly file and return (months, temperatures_celsius).
+
+    Both arrays have shape (8760,).  ``months`` holds the calendar month
+    (1–12) for each hourly observation.
+    """
+    months, temps = [], []
+    with open(filepath) as fh:
+        for line in fh:
+            if line.startswith("#"):
+                continue
+            parts = line.strip().split(",")
+            if len(parts) < 4:
+                continue
+            yyyymmdd = parts[1].strip()
+            month = int(yyyymmdd[4:6])
+            t_raw = int(parts[3].strip())
+            months.append(month)
+            temps.append(t_raw / 10.0)
+    return np.array(months), np.array(temps)
+
+
+_SEASON_MAP = {
+    "Winter (DJF)": {12, 1, 2},
+    "Spring (MAM)": {3, 4, 5},
+    "Summer (JJA)": {6, 7, 8},
+    "Autumn (SON)": {9, 10, 11},
+}
+
+
+def knmi_summary_table(filepath: str = KNMI_PATH):
+    """Print a report-ready summary table of the KNMI temperature data."""
+    months, temp = _parse_knmi(filepath)
+
+    # --- Section 1: annual statistics ---
+    annual_rows = [
+        ["Mean temperature",   f"{temp.mean():.2f}", "°C"],
+        ["Std. deviation",     f"{temp.std():.2f}",  "°C"],
+        ["Minimum temperature", f"{temp.min():.1f}", "°C"],
+        ["Maximum temperature", f"{temp.max():.1f}", "°C"],
+    ]
+
+    # --- Section 2: seasonal statistics ---
+    seasonal_rows = []
+    for season, month_set in _SEASON_MAP.items():
+        mask = np.isin(months, list(month_set))
+        s = temp[mask]
+        seasonal_rows.append([
+            season,
+            f"{s.mean():.2f}",
+            f"{s.min():.1f}",
+            f"{s.max():.1f}",
+        ])
+
+    # --- Section 3: monthly means ---
+    monthly_rows = []
+    month_names = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ]
+    for m in range(1, 13):
+        s = temp[months == m]
+        monthly_rows.append([month_names[m - 1], f"{s.mean():.2f}", f"{s.min():.1f}", f"{s.max():.1f}"])
+
+    # --- Section 4: derived climate indicators ---
+    n_total = len(temp)
+    frost_hours    = int((temp < 0).sum())
+    ice_hours      = int((temp < -5).sum())
+    summer_hours   = int((temp >= 25).sum())
+    tropical_hours = int((temp >= 30).sum())
+    hdd_base18     = float(np.maximum(18.0 - temp, 0).sum())
+
+    indicator_rows = [
+        ["Frost hours (T < 0 °C)",     f"{frost_hours}",    f"{frost_hours / n_total * 100:.2f}", "h / %"],
+        ["Ice hours (T < −5 °C)",      f"{ice_hours}",      f"{ice_hours / n_total * 100:.2f}",   "h / %"],
+        ["Summer hours (T ≥ 25 °C)",   f"{summer_hours}",   f"{summer_hours / n_total * 100:.2f}","h / %"],
+        ["Tropical hours (T ≥ 30 °C)", f"{tropical_hours}", f"{tropical_hours / n_total * 100:.2f}", "h / %"],
+        ["Heating degree-hours (base 18 °C)", f"{hdd_base18:.0f}", "—", "°C·h"],
+    ]
+
+    # --- Print annual + seasonal + indicators as a sectioned table ---
+    annual_formatted = [[r[0], r[1], "—", r[2]] for r in annual_rows]
+    seasonal_formatted = seasonal_rows
+    indicator_formatted = indicator_rows
+
+    print_sectioned_table(
+        "Table 0a: KNMI Temperature Data — Annual & Seasonal Summary "
+        "(Rotterdam stn 344, 2019)",
+        ["Metric", "Value / Mean", "Min / Count", "Unit"],
+        [
+            ("Annual", annual_formatted),
+            ("Seasonal (mean / min / max)", seasonal_formatted),
+            ("Climate indicators", indicator_formatted),
+        ],
+    )
+
+    # --- Print monthly breakdown as a flat table ---
+    print_table(
+        "Table 0b: KNMI Monthly Temperature Breakdown (Rotterdam stn 344, 2019)",
+        ["Month", "Mean [°C]", "Min [°C]", "Max [°C]"],
+        monthly_rows,
+    )
+
+
 def main():
+    # ------------------------------------------------------------------
+    # STEP 0 — KNMI weather data summary
+    # ------------------------------------------------------------------
+    if os.path.exists(KNMI_PATH):
+        knmi_summary_table(KNMI_PATH)
+    else:
+        print(f"\n  WARNING: KNMI data not found at {KNMI_PATH} — skipping weather summary.\n")
+
     # ------------------------------------------------------------------
     # STEP 0 — Data availability check
     # ------------------------------------------------------------------
@@ -307,6 +420,35 @@ def main():
     ]
     print_table("Table 3: SOC Constraint Validation (config 99, 3× loading)",
                 ["Metric", "Value", "Unit"], rows_t3)
+
+    # ------------------------------------------------------------------
+    # DEBUG — HP-on while away and T_room well above setback
+    # ------------------------------------------------------------------
+    t_room_c1 = c1e["temperatures"].astype(float)
+    t_min_dyn_c1 = c1e["temp_min_dynamics"].astype(float)
+    p_hp_c1 = c1e["hp_powers"].astype(float)
+    home_c1 = c1e["is_homes"].astype(bool)
+    v_ev_c1_dbg = c1e["voltages"].astype(float)
+
+    suspect = (p_hp_c1 > 0) & ~home_c1 & (t_room_c1 > t_min_dyn_c1 + 2)
+    suspect_ov = suspect & (v_ev_c1_dbg > 1.02)
+    suspect_real = suspect & (v_ev_c1_dbg <= 1.02)
+
+    print("=" * 70)
+    print("  DEBUG — HP on while away & T_room > T_min_dyn + 2 °C  (config 1 EV)")
+    print("=" * 70)
+    print(f"  Total suspect timesteps:     {int(suspect.sum()):>6}  "
+          f"({suspect.sum() / TOTAL_STEPS * 100:.2f}%)")
+    print(f"    Due to overvoltage (V>1.02, correct): {int(suspect_ov.sum()):>6}")
+    print(f"    Remaining (temp-control bug):         {int(suspect_real.sum()):>6}")
+    if suspect_real.any():
+        print(f"  T_room  at bug steps: "
+              f"{t_room_c1[suspect_real].min():.1f} – {t_room_c1[suspect_real].max():.1f} °C")
+        print(f"  T_min_dyn at bug steps: "
+              f"{t_min_dyn_c1[suspect_real].min():.1f} – {t_min_dyn_c1[suspect_real].max():.1f} °C")
+    else:
+        print("  ✓ Temperature-control setback is working correctly.")
+    print()
 
 
 if __name__ == "__main__":
