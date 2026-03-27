@@ -1,0 +1,196 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Forecasting Module Data Flow" id="forecast-dataflow">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1400">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        
+        <!-- Title -->
+        <mxCell id="title" value="Forecasting Module (FM-e) - Data Flow Diagram" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="30" width="800" height="40" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="subtitle" value="Day-Ahead Load &amp; Generation Forecasting for Smart House Digital Twin" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="300" y="75" width="1000" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- LEFT: Data Sources -->
+        <mxCell id="datasources_title" value="&lt;b&gt;DATA SOURCES&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#0066CC;" vertex="1" parent="1">
+          <mxGeometry x="100" y="140" width="300" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- Historical Simulation Data -->
+        <mxCell id="hist_data" value="&lt;b&gt;Historical Simulation Data&lt;/b&gt;&lt;br&gt;&lt;br&gt;• Timestamped measurements&lt;br&gt;• P_load (total consumption) [kW]&lt;br&gt;• P_PV (generation) [kW]&lt;br&gt;• T_outside [°C]&lt;br&gt;• Driver behavior (is_home)&lt;br&gt;&lt;br&gt;Source: Co-simulation runs&lt;br&gt;Duration: ~1 year (synthetic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="100" y="190" width="300" height="180" as="geometry"/>
+        </mxCell>
+        
+        <!-- Real-time Data -->
+        <mxCell id="realtime_data" value="&lt;b&gt;Real-Time Measurements&lt;/b&gt;&lt;br&gt;&lt;br&gt;• Current timestamp&lt;br&gt;• Recent loads (lag features)&lt;br&gt;• Weather forecast (optional)&lt;br&gt;• Driver schedule&lt;br&gt;&lt;br&gt;Source: Digital Twin sensors&lt;br&gt;Update: Every 15-30 min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="100" y="400" width="300" height="160" as="geometry"/>
+        </mxCell>
+        
+        <!-- CENTER: Feature Engineering -->
+        <mxCell id="feature_title" value="&lt;b&gt;FEATURE ENGINEERING&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#CC6600;" vertex="1" parent="1">
+          <mxGeometry x="550" y="140" width="400" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- Feature Engineering Box -->
+        <mxCell id="feature_eng" value="&lt;b&gt;Feature Extraction &amp; Transformation&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=center;verticalAlign=top;spacingTop=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="550" y="190" width="400" height="370" as="geometry"/>
+        </mxCell>
+        
+        <!-- Temporal Features -->
+        <mxCell id="temporal_feat" value="&lt;b&gt;Temporal Features&lt;/b&gt;&lt;br&gt;&lt;br&gt;• hour_of_day (0-23)&lt;br&gt;• day_of_week (0-6)&lt;br&gt;• month (1-12)&lt;br&gt;• is_weekend (bool)&lt;br&gt;• hour_sin, hour_cos (cyclical)&lt;br&gt;• day_of_year (1-365)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="570" y="230" width="180" height="140" as="geometry"/>
+        </mxCell>
+        
+        <!-- Lagged Features -->
+        <mxCell id="lagged_feat" value="&lt;b&gt;Lagged Features&lt;/b&gt;&lt;br&gt;&lt;br&gt;• load_lag_1h&lt;br&gt;• load_lag_24h (yesterday)&lt;br&gt;• load_lag_168h (last week)&lt;br&gt;• rolling_mean_24h&lt;br&gt;• rolling_std_24h" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="760" y="230" width="180" height="140" as="geometry"/>
+        </mxCell>
+        
+        <!-- Contextual Features -->
+        <mxCell id="context_feat" value="&lt;b&gt;Contextual Features&lt;/b&gt;&lt;br&gt;&lt;br&gt;• T_outside [°C]&lt;br&gt;• is_home (driver presence)&lt;br&gt;• T_setpoint_pref (15/20°C)&lt;br&gt;• heating_degree_days (HDD)&lt;br&gt;• solar_elevation_angle" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="570" y="390" width="180" height="150" as="geometry"/>
+        </mxCell>
+        
+        <!-- Engineered Features -->
+        <mxCell id="engineered_feat" value="&lt;b&gt;Engineered Features&lt;/b&gt;&lt;br&gt;&lt;br&gt;• load_per_degree (load/ΔT)&lt;br&gt;• is_heating_season&lt;br&gt;• interaction: hour × is_home&lt;br&gt;• PV_theoretical (clear-sky)&lt;br&gt;• weekend × hour" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="760" y="390" width="180" height="150" as="geometry"/>
+        </mxCell>
+        
+        <!-- Arrows: Data to Features -->
+        <mxCell id="arrow_hist_feat" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" edge="1" parent="1" source="hist_data" target="feature_eng">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="arrow_rt_feat" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#00CC00;exitX=1;exitY=0.5;entryX=0;entryY=0.7;" edge="1" parent="1" source="realtime_data" target="feature_eng">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- RIGHT: ML Models -->
+        <mxCell id="models_title" value="&lt;b&gt;ML MODELS&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="140" width="300" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- Load Forecasting Model -->
+        <mxCell id="load_model" value="&lt;b&gt;Load Forecasting Model&lt;/b&gt;&lt;br&gt;&lt;br&gt;Model: Random Forest Regressor&lt;br&gt;&lt;br&gt;Input: Feature matrix X&lt;br&gt;Output: P_load_forecast[t+1:t+24h]&lt;br&gt;&lt;br&gt;Training: Historical data (80%)&lt;br&gt;Validation: Test set (20%)&lt;br&gt;&lt;br&gt;Metrics: MAE, RMSE, R²" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="190" width="300" height="180" as="geometry"/>
+        </mxCell>
+        
+        <!-- PV Forecasting Model -->
+        <mxCell id="pv_model" value="&lt;b&gt;PV Generation Forecasting&lt;/b&gt;&lt;br&gt;&lt;br&gt;Model: Linear Regression&lt;br&gt;&lt;br&gt;Input: Time, solar angle, weather&lt;br&gt;Output: P_PV_forecast[t+1:t+24h]&lt;br&gt;&lt;br&gt;Baseline: Clear-sky model&lt;br&gt;Enhancement: Cloud cover correction&lt;br&gt;&lt;br&gt;Metrics: MAE, forecast skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="400" width="300" height="160" as="geometry"/>
+        </mxCell>
+        
+        <!-- Arrows: Features to Models -->
+        <mxCell id="arrow_feat_load" value="Feature Matrix" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#CC6600;exitX=1;exitY=0.3;entryX=0;entryY=0.5;" edge="1" parent="1" source="feature_eng" target="load_model">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="arrow_feat_pv" value="Feature Matrix" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#CC6600;exitX=1;exitY=0.7;entryX=0;entryY=0.5;" edge="1" parent="1" source="feature_eng" target="pv_model">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- BOTTOM: Outputs & Integration -->
+        <mxCell id="output_title" value="&lt;b&gt;OUTPUTS &amp; INTEGRATION&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="550" y="600" width="400" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- Forecast Output -->
+        <mxCell id="forecast_output" value="&lt;b&gt;Forecast Output&lt;/b&gt;&lt;br&gt;&lt;br&gt;• 24-hour ahead predictions&lt;br&gt;• Timestamped intervals (15-30 min)&lt;br&gt;• Confidence intervals (optional)&lt;br&gt;&lt;br&gt;Format: DataFrame or JSON&lt;br&gt;{timestamp, P_load_pred, P_PV_pred}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="550" y="650" width="400" height="140" as="geometry"/>
+        </mxCell>
+        
+        <!-- Arrows: Models to Output -->
+        <mxCell id="arrow_load_out" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#CC0000;exitX=0.5;exitY=1;entryX=0.75;entryY=0;curved=1;" edge="1" parent="1" source="load_model" target="forecast_output">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="arrow_pv_out" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#CC0000;exitX=0.5;exitY=1;entryX=0.75;entryY=0;curved=1;" edge="1" parent="1" source="pv_model" target="forecast_output">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- Digital Twin Integration -->
+        <mxCell id="dt_integration" value="&lt;b&gt;Digital Twin Integration&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. Compare forecast vs. actual&lt;br&gt;2. Compute forecast error (MAE, RMSE)&lt;br&gt;3. Anomaly detection (large deviations)&lt;br&gt;4. Retrain trigger (if error &gt; threshold)&lt;br&gt;5. Dashboard visualization" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d79b00;fontSize=12;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="650" width="300" height="140" as="geometry"/>
+        </mxCell>
+        
+        <!-- Arrow: Output to DT -->
+        <mxCell id="arrow_out_dt" value="Predictions" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#006600;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="forecast_output" target="dt_integration">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- Feedback loop: DT to Data Sources -->
+        <mxCell id="arrow_feedback" value="Actual measurements&#xa;(for retraining)" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;exitX=0.5;exitY=1;entryX=0.5;entryY=1;curved=1;dashed=1;" edge="1" parent="1" source="dt_integration" target="hist_data">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1250" y="850"/>
+              <mxPoint x="250" y="850"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- LEGEND -->
+        <mxCell id="legend_box" value="&lt;b&gt;Legend&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="850" width="500" height="180" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend1" value="🔵  Blue arrows: Historical training data flow" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="120" y="890" width="460" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend2" value="🟢  Green arrows: Real-time inference data flow" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="120" y="920" width="460" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend3" value="🟠  Orange arrows: Feature → Model data flow" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="120" y="950" width="460" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend4" value="🔴  Red arrows: Model predictions to output" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="120" y="980" width="460" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend5" value="⚫  Gray dashed: Feedback loop (continuous learning)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1010" width="460" height="25" as="geometry"/>
+        </mxCell>
+        
+        <!-- NOTES -->
+        <mxCell id="notes_box" value="&lt;b&gt;Key Design Principles&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d79b00;fontSize=14;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="700" y="850" width="700" height="180" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="note1" value="1. Separate models for load vs. PV (different physical processes)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="890" width="660" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="note2" value="2. Feature engineering is critical — domain knowledge improves accuracy" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="920" width="660" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="note3" value="3. Chronological train/test split (no random shuffle for time series)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="950" width="660" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="note4" value="4. Forecast horizon: 24h ahead with 15-30 min resolution (industry standard)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="980" width="660" height="25" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="note5" value="5. Continuous learning: Retrain periodically as new data becomes available" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="1010" width="660" height="25" as="geometry"/>
+        </mxCell>
+        
+        <!-- Workflow stages label -->
+        <mxCell id="stage1" value="OFFLINE&#xa;TRAINING" style="text;html=1;strokeColor=#0066CC;fillColor=#dae8fc;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=270;" vertex="1" parent="1">
+          <mxGeometry x="30" y="260" width="120" height="40" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="stage2" value="ONLINE&#xa;INFERENCE" style="text;html=1;strokeColor=#00CC00;fillColor=#d5e8d4;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=270;" vertex="1" parent="1">
+          <mxGeometry x="30" y="460" width="120" height="40" as="geometry"/>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
