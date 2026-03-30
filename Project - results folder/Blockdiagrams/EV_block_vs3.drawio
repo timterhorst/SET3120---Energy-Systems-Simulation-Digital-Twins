@@ -1,0 +1,105 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.1">
+  <diagram id="_zeEA7MoNy7a98EGfBjS" name="Pagina-1">
+    <mxGraphModel dx="1678" dy="935" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="hp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;verticalAlign=middle;" value="&lt;b&gt;Heat Pump&lt;/b&gt;&lt;br&gt;&lt;br&gt;Q_hp = COP × P_set&lt;br&gt;η = 3 (linear model)&lt;br&gt;&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="220" x="160" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="room" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;verticalAlign=middle;" value="&lt;b&gt;Room (Thermal)&lt;/b&gt;&lt;br&gt;&lt;br&gt;dT/dt = (1/C) × (Q_hp − (T_room − T_out)/R)&lt;br&gt;C = 7200 kJ/K, R = 0.007 K/W&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="220" x="160" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="grid" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=8;verticalAlign=middle;" value="&lt;b&gt;Electric Grid&lt;/b&gt;&lt;br&gt;&lt;br&gt;P_total = P_hp + P_charge&lt;br&gt;V_grid = f(P_total, topology)&lt;br&gt;95-bus PowerGridModel&lt;br&gt;&lt;br&gt;&lt;i&gt;&lt;b&gt;MODIFIED for FM-c&lt;/b&gt; (P_charge added;&lt;br&gt;P_charge &lt; 0 for V2G discharge)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="140" width="260" x="560" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=8;verticalAlign=middle;" value="&lt;b&gt;Thermostat Controller&lt;/b&gt;&lt;br&gt;&lt;br&gt;Voltage priority: ±2 kW steps&lt;br&gt;if V ∉ [0.98, 1.02] p.u.&lt;br&gt;Temperature: ±2 kW steps&lt;br&gt;if T ∉ [T_min_dyn, 22°C]&lt;br&gt;&lt;br&gt;&lt;i&gt;&lt;b&gt;MODIFIED for FM-c&lt;/b&gt; (T_min_dyn&lt;br&gt;from Driver Model via override)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="160" width="220" x="160" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="driver" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;verticalAlign=middle;" value="&lt;b&gt;Driver Model&lt;/b&gt;&lt;br&gt;(Discrete event)&lt;br&gt;&lt;br&gt;• Departure: U(06:00–07:00)&lt;br&gt;• Arrival: U(16:00–17:00)&lt;br&gt;• SOC depletion at arrival: U(0%, 90%)&lt;br&gt;• Occupancy tracking (is_home)&lt;br&gt;&lt;br&gt;&lt;i&gt;NEW — FM-c&lt;/i&gt;" vertex="1">
+          <mxGeometry height="170" width="220" x="160" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="chargectrl" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;verticalAlign=middle;" value="&lt;b&gt;Charging Controller + V2G&lt;/b&gt;&lt;br&gt;&lt;br&gt;• Only if is_home = True&lt;br&gt;• Voltage priority (overrides SOC logic):&lt;br&gt;  – V &amp;lt; 0.98: discharge if SOC &amp;gt; 40%&lt;br&gt;    (V2G injects power, raises V)&lt;br&gt;  – V &amp;gt; 1.02: charge at max&lt;br&gt;    (absorbs excess, lowers V)&lt;br&gt;• Normal V: SOC-based rate&lt;br&gt;  (100%→0W, ≥50%→3.7kW,&lt;br&gt;   20–50%→5.55kW, &amp;lt;20%→7.4kW)&lt;br&gt;&lt;br&gt;&lt;i&gt;NEW — FM-c&amp;nbsp;&lt;/i&gt;" vertex="1">
+          <mxGeometry height="250" width="270" x="940" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="evbat" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;verticalAlign=middle;" value="&lt;b&gt;EV Battery&lt;/b&gt;&lt;br&gt;(Dynamic ODE)&lt;br&gt;&lt;br&gt;Charging (P ≥ 0):&lt;br&gt;dSOC/dt = η_ch × P / E_cap&lt;br&gt;&lt;br&gt;Discharging (P &lt; 0):&lt;br&gt;dSOC/dt = P / (η_dis × E_cap)&lt;br&gt;&lt;br&gt;• E_cap = 50 kWh&lt;br&gt;• η_ch = 0.90, η_dis = 0.85&lt;br&gt;• SOC ∈ [0%, 100%], SOC₀ = 100%&lt;br&gt;• Explicit Euler, Δt = 15 min&lt;br&gt;&lt;br&gt;&lt;i&gt;NEW — FM-c&lt;/i&gt;" vertex="1">
+          <mxGeometry height="240" width="270" x="940" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="driver" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontSize=10;" target="ctrl" value="T_min_dyn [°C]&lt;br&gt;10°C away / 18°C home">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="driver" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.2;" target="chargectrl" value="is_home (boolean)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="185" />
+              <mxPoint x="560" y="336" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="driver" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontSize=10;exitX=1;exitY=0.8;entryX=0;entryY=0.1;" target="evbat" value="ΔSOC_drive (on arrival)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="236" />
+              <mxPoint x="870" y="236" />
+              <mxPoint x="870" y="594" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;fontColor=#006600;fontSize=10;exitX=1;exitY=0.5;" value="P_hp [W]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="440" as="sourcePoint" />
+            <mxPoint x="560" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="ctrl" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;fontColor=#006600;fontSize=10;" target="hp" value="P_hp [W]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="hp" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;fontColor=#006600;fontSize=10;" target="room" value="Q_hp [W]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="room" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#001a99;strokeWidth=2;fontColor=#001a99;fontSize=10;dashed=1;exitX=0;exitY=0.3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="ctrl" value="T_room [°C]">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="710" />
+              <mxPoint x="100" y="710" />
+              <mxPoint x="100" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="grid" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#001a99;strokeWidth=2;fontColor=#001a99;fontSize=10;dashed=1;exitX=0;exitY=0.25;entryX=1;entryY=0.3;exitDx=0;exitDy=0;" target="ctrl" value="V_grid [p.u.]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="grid" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#001a99;strokeWidth=2;fontColor=#001a99;fontSize=10;dashed=1;exitX=1;exitY=0.5;entryX=0;entryY=0.6;" target="chargectrl" value="V_grid [p.u.]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="chargectrl" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontSize=10;exitX=0;exitY=0.3;entryX=1;entryY=0.1;" target="grid" value="P_charge [W]&lt;br&gt;(+: charge, −: V2G)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="chargectrl" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontSize=10;" target="evbat" value="P_charge [W]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="evbat" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#001a99;strokeWidth=2;fontColor=#001a99;fontSize=10;dashed=1;exitX=1;exitY=0.3;" value="SOC [%]">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1270" y="642" />
+              <mxPoint x="1270" y="476" />
+              <mxPoint x="1210" y="476" />
+            </Array>
+            <mxPoint x="1210" y="476" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="&lt;b&gt;Legend — Component Colors&lt;/b&gt;&lt;br&gt;&lt;br&gt;🟢 Green: Baseline components (unchanged)&lt;br&gt;🟡 Orange: Modified baseline components for FM-c&lt;br&gt;🔴 Red/Pink: New components added in FM-c&lt;br&gt;&lt;br&gt;&lt;b&gt;Arrow Types&lt;/b&gt;&lt;br&gt;&lt;br&gt;—— Solid green: Baseline data flows&lt;br&gt;—— Solid red: New FM-c signals&lt;br&gt;- - - Blue dashed: Feedback signals (k−1)" vertex="1">
+          <mxGeometry height="200" width="340" x="160" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="decisions" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="&lt;b&gt;Key Design Decisions — FM-c&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. Driver Model is event-based; SOC depletion applied as step-change on arrival&lt;br&gt;2. EV charges/discharges ONLY when is_home = True&lt;br&gt;3. Voltage correction has priority over SOC-based charging logic&lt;br&gt;4. V2G discharges during &lt;b&gt;undervoltage&lt;/b&gt; (injects power → raises V);&lt;br&gt;   charges at max during &lt;b&gt;overvoltage&lt;/b&gt; (absorbs power → lowers V)&lt;br&gt;5. SOC_min_V2G = 40% reserves range for next day&#39;s driving&lt;br&gt;6. Asymmetric efficiency: η_ch in numerator, η_dis in denominator&lt;br&gt;7. T_min_dyn: 10°C away (frost protection), 18°C home (comfort)" vertex="1">
+          <mxGeometry height="200" width="500" x="560" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="syncnote" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="&lt;b&gt;Synchronization Order (per timestep k)&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. Driver Model → is_home[k], T_min_dyn[k], ΔSOC_drive[k]&lt;br&gt;2. Electric Grid → V_grid[k]  (uses P_hp[k−1] + P_charge[k−1])&lt;br&gt;3. Heat Pump → Q_hp[k]  (uses P_hp[k−1])&lt;br&gt;4. Room → T_room[k]  (uses Q_hp[k])&lt;br&gt;5. EV Battery → SOC[k]  (uses P_charge[k−1], ΔSOC_drive[k])&lt;br&gt;6. Thermostat Controller → P_hp[k]  (uses V_grid[k], T_room[k], T_min_dyn[k])&lt;br&gt;7. Charging Controller → P_charge[k]  (uses V_grid[k], SOC[k], is_home[k])" vertex="1">
+          <mxGeometry height="200" width="400" x="940" y="830" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

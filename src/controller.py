@@ -9,48 +9,46 @@ def controller_function(
     
     The controller is used to adjust the power setpoint of the heat pump based boundary conditions.
 
+    Uses bang-bang (hysteresis) control with a fixed-width dead band that
+    tracks temp_min.  When temp_min_override lowers the setpoint (occupancy
+    setback), the turn-off threshold drops by the same amount so the HP
+    does not heat an empty house up to temp_max.
+
     Args:
         temp_min_override: if provided, replaces the minimum temperature from config.
             Used by the Driver Model to implement occupancy-based setback.
     """
-    # Boundary conditions
-    voltage_min = controller_settings['ControllerSettings']['boundary_conditions']['minimum_voltage']
-    voltage_max = controller_settings['ControllerSettings']['boundary_conditions']['maximum_voltage']
-    temp_min = controller_settings['ControllerSettings']['boundary_conditions']['minimum_temperature']
-    temp_max = controller_settings['ControllerSettings']['boundary_conditions']['maximum_temperature']
+    bc = controller_settings['ControllerSettings']['boundary_conditions']
+    voltage_min = bc['minimum_voltage']
+    voltage_max = bc['maximum_voltage']
+    temp_min_default = bc['minimum_temperature']
+    temp_max = bc['maximum_temperature']
 
-    if temp_min_override is not None:
-        temp_min = temp_min_override
-    
+    temp_min = temp_min_override if temp_min_override is not None else temp_min_default
+
+    # The hysteresis band width is fixed at (temp_max − default_temp_min).
+    # When setback lowers temp_min, the upper threshold tracks it so the
+    # band stays the same width (e.g. [10, 14] instead of [10, 22]).
+    deadband = temp_max - temp_min_default
+    temp_off = temp_min + deadband
+
     p_adjust_step_size_voltage = controller_settings['ControllerSettings']['actions']['p_change_for_voltage']
     p_adjust_step_size_temp = controller_settings['ControllerSettings']['actions']['p_change_for_temperature']
 
-    # Log current state of the system (commented out for performance during batch runs)
-    # print(f"Current power setpoint of the heat pump: {power_set_point_hp}")
-    # print(f"Current grid voltage: {voltage}")
-    # print(f"Current temperature: {temperature}")
-
-    # Temperature control: Turn on or off the heat pump based on temperature needs (when the voltage is within limits)
+    # Temperature control (voltage within limits)
     if voltage_min <= voltage <= voltage_max:
-        if temperature > temp_max:
+        if temperature > temp_off:
             power_set_point_hp = 0
-            # print("Temperature is too high, turn off the heat pump to cool down.")
         elif temperature < temp_min:
             power_set_point_hp = p_adjust_step_size_temp
-            # print("Temperature is too low, turn on the heat pump to warm up.")
 
-    # Voltage control: Turn on or off the heat pump based on voltage limits (Voltage control has higher priority when the temperature is low)
+    # Voltage control (takes priority over temperature)
     elif voltage < voltage_min:
         power_set_point_hp = 0
-        # print(f"Voltage {voltage} too low, turn off the heat pump to correct voltage.")
     elif voltage > voltage_max:
         if temperature < temp_max:
             power_set_point_hp = p_adjust_step_size_voltage
-            # print(f"Voltage {voltage} too high, turn on the heat pump to correct voltage.")
         else:
             power_set_point_hp = 0
-            # print(f"Although the voltage {voltage} too high and we need to turn on the heat pump, but temperature {temperature} is too high, the heat pump has to be turned off.")
-    else:
-        pass
 
     return power_set_point_hp

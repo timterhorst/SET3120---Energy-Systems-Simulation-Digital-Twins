@@ -17,6 +17,6 @@ EVSettings:
     arrival_latest: 1020       # Latest arrival [min from midnight] (17:00)
     soc_depletion_min: 0.0     # Min daily SOC depletion [-] (0% = no driving)
     soc_depletion_max: 0.90    # Max daily SOC depletion [-] (return SOC in ~10–100%)
-    temp_min_home: 20          # Thermostat lower bound when home [°C]
+    temp_min_home: 18          # Thermostat lower bound when home [°C]
     temp_min_away: 10          # Thermostat lower bound when away [°C] (frost protection)
     random_seed: 42            # RNG seed for reproducibility (null for non-deterministic)
